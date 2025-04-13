@@ -7,6 +7,7 @@ from todo_project.forms import RegistrationForm, LoginForm, UpdateUserInfoForm, 
 def setup():
     app.config['TESTING'] = True
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
+    app.config['WTF_CSRF_ENABLED'] = False
     with app.app_context():
         db.create_all()
         user = User(username='existinguser', password='password')
@@ -27,19 +28,21 @@ def test_login_form():
         assert form.validate() is True
 
 def test_update_user_info_form():
-    with app.app_context():
+    with app.test_request_context():
         form = UpdateUserInfoForm(username='testuser')
         assert form.validate() is True
 
 def test_update_user_password_form():
-    with app.app_context():
+    with app.test_request_context():
         form = UpdateUserPassword(old_password='password', new_password='newpassword')
         assert form.validate() is True
 
 def test_task_form():
-    form = TaskForm(task_name='Test Task')
-    assert form.validate() is True
+    with app.test_request_context():
+        form = TaskForm(task_name='Test Task')
+        assert form.validate() is True
 
 def test_update_task_form():
-    form = UpdateTaskForm(task_name='Updated Task')
-    assert form.validate() is True
+    with app.test_request_context():
+        form = UpdateTaskForm(task_name='Updated Task')
+        assert form.validate() is True
