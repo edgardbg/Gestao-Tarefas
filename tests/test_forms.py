@@ -2,6 +2,7 @@ import pytest
 from todo_project import app, db
 from todo_project.models import User
 from todo_project.forms import RegistrationForm, LoginForm, UpdateUserInfoForm, UpdateUserPassword, TaskForm, UpdateTaskForm
+from flask_login import current_user
 
 @pytest.fixture
 def setup():
@@ -17,6 +18,13 @@ def setup():
         db.session.remove()
         db.drop_all()
 
+@pytest.fixture
+def authenticated_user(setup):
+    with app.test_request_context():
+        user = User.query.filter_by(username='existinguser').first()
+        current_user._get_current_object = lambda: user
+        yield
+
 def test_registration_form(setup):
     with app.test_request_context():
         form = RegistrationForm(username='uniqueuser', password='password', confirm_password='password')
@@ -27,7 +35,7 @@ def test_login_form():
         form = LoginForm(username='testuser', password='password')
         assert form.validate() is True
 
-def test_update_user_info_form():
+def test_update_user_info_form(authenticated_user):
     with app.test_request_context():
         form = UpdateUserInfoForm(username='testuser')
         assert form.validate() is True

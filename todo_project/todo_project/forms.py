@@ -37,7 +37,7 @@ class UpdateUserInfoForm(FlaskForm):
 
     # Check wheather user already exists in the Database
     def validate_username(self, username):
-        if username.data != current_user.username:    
+        if current_user.is_authenticated and username.data != current_user.username:
             user = User.query.filter_by(username=username.data).first()
             if user:
                 raise ValidationError('Username Exists')
