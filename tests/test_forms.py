@@ -22,7 +22,7 @@ def test_registration_form(setup):
         assert form.validate() is True
 
 def test_login_form():
-    with app.app_context():
+    with app.test_request_context():
         form = LoginForm(username='testuser', password='password')
         assert form.validate() is True
 
