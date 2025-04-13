@@ -10,3 +10,4 @@ services:
     - 5001:5001
   volumes:
     - /home/aluno/Gestao-Tarefas/dados:/app/dados
+    - /var/cache/apt/archives:/var/cache/apt/archives
