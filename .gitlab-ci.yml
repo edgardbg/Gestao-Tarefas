@@ -73,3 +73,33 @@ deploy_job:
   script:
     - echo "Deploying the app"
     - docker run -d -p 8081:8080 ex-build-dev:latest
+
+review_job:
+  stage: deploy
+  image: docker:20.10.16
+  services:
+    - docker:20.10.16-dind
+  script:
+    - echo "Creating temporary review environment"
+    - docker run -d -p 8082:8080 ex-build-dev:latest
+
+deploy_stage:
+  stage: deploy
+  image: docker:20.10.16
+  services:
+    - docker:20.10.16-dind
+  script:
+    - echo "Deploying the app to stage"
+    - docker run -d -p 8080:8080 ex-build-dev:latest
+
+dast_job:
+  stage: test
+  image: owasp/zap2docker-stable
+  script:
+    - zap-baseline.py -t http://localhost:8080 -r zap_report.html
+  artifacts:
+    paths:
+      - zap_report.html
+    expire_in: 1 week
+  needs:
+    - deploy_stage
