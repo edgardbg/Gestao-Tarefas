@@ -19,7 +19,7 @@ def test_user_model(setup):
     assert user.tasks == []
 
 def test_task_model(setup):
-    user = User(username='testuser', password='password')
+    user = User(username='testuser2', password='password')
     db.session.add(user)
     db.session.commit()
 
