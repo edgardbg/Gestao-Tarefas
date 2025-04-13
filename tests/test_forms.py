@@ -3,7 +3,7 @@ from todo_project import app
 from todo_project.forms import RegistrationForm, LoginForm, UpdateUserInfoForm, UpdateUserPassword, TaskForm, UpdateTaskForm
 
 def test_registration_form():
-    with app.app_context():
+    with app.test_request_context():
         form = RegistrationForm(username='testuser', password='password', confirm_password='password')
         assert form.validate() is True
 
