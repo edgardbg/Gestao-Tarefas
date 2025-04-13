@@ -1,0 +1,12 @@
+version: '3'
+services:
+ web:
+  build:
+    context: .
+    dockerfile: Dockerfile
+  image: gestao-tarefas-flask
+  container_name: gestao-tarefas-flask
+  ports:
+    - 5001:5001
+  volumes:
+    - /home/aluno/Gestao-Tarefas/dados:/app/dados
