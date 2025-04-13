@@ -1,5 +1,5 @@
 import pytest
-from todo_project.todo_project import app, db, bcrypt
+from todo_project import app, db, bcrypt
 from todo_project.models import User, Task
 from todo_project.forms import (LoginForm, RegistrationForm, UpdateUserInfoForm, 
                                 UpdateUserPassword, TaskForm, UpdateTaskForm)
