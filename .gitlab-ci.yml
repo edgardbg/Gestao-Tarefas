@@ -4,6 +4,8 @@ variables:
   COMPOSE_HTTP_TIMEOUT: 600
   DOCKER_BUILDKIT: 0
   COMPOSE_DOCKER_CLI_BUILD: 0
+  SQLALCHEMY_WARN_20: 1
+  SQLALCHEMY_SILENCE_UBER_WARNING: 1
 
 stages:
   - build
@@ -34,6 +36,7 @@ test_job:
     paths:
       - $CI_PROJECT_DIR/coverage.xml
     expire_in: 1 week
+    when: always
 
 sast_job:
   stage: test
