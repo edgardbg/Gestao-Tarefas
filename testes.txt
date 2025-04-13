@@ -4,15 +4,15 @@ Preparing the "docker" executor 00:02
 Using Docker executor with image python:3.11 ...
 Pulling docker image python:3.11 ...
 Using docker image sha256:aa1de9f50b432a8c71a4379a280904597c332b7df1ce444ea23736ac8ce9b272 for python:3.11 with digest python@sha256:a3e280261e448b95d49423532ccd6e5329c39d171c10df1457891ff7c5e2301b ...
-Preparing environment 00:00
+Preparing environment 00:01
 Running on runner-prndyxsm-project-3-concurrent-0 via gitlab-runner1...
-Getting source from Git repository 00:02
+Getting source from Git repository 00:01
 Fetching changes with git depth set to 20...
 Reinitialized existing Git repository in /builds/root/gestao-tarefas/.git/
 Created fresh repository.
-Checking out 7f79c720 as detached HEAD (ref is master)...
+Checking out 291fad99 as detached HEAD (ref is master)...
 Skipping Git submodules setup
-Executing "step_script" stage of the job script 00:31
+Executing "step_script" stage of the job script 00:06
 Using docker image sha256:aa1de9f50b432a8c71a4379a280904597c332b7df1ce444ea23736ac8ce9b272 for python:3.11 with digest python@sha256:a3e280261e448b95d49423532ccd6e5329c39d171c10df1457891ff7c5e2301b ...
 $ apt-get update && apt-get install -y --no-install-recommends gcc python3-dev
 Get:1 http://deb.debian.org/debian bookworm InRelease [151 kB]
@@ -21,7 +21,7 @@ Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB
 Get:4 http://deb.debian.org/debian bookworm/main amd64 Packages [8792 kB]
 Get:5 http://deb.debian.org/debian bookworm-updates/main amd64 Packages [512 B]
 Get:6 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [254 kB]
-Fetched 9301 kB in 2s (5220 kB/s)
+Fetched 9301 kB in 2s (4123 kB/s)
 Reading package lists...
 Reading package lists...
 Building dependency tree...
@@ -35,176 +35,13 @@ Recommended packages:
 The following NEW packages will be installed:
   libjs-jquery libjs-sphinxdoc libjs-underscore libpython3-dev libpython3.11
   libpython3.11-dev python3-dev python3.11-dev
+E: You don't have enough free space in /var/cache/apt/archives/.
 0 upgraded, 8 newly installed, 0 to remove and 5 not upgraded.
 Need to get 7950 kB of archives.
 After this operation, 36.3 MB of additional disk space will be used.
-Get:1 http://deb.debian.org/debian bookworm/main amd64 libjs-jquery all 3.6.1+dfsg+~3.5.14-1 [326 kB]
-Get:2 http://deb.debian.org/debian bookworm/main amd64 libjs-underscore all 1.13.4~dfsg+~1.11.4-3 [116 kB]
-Get:3 http://deb.debian.org/debian bookworm/main amd64 libjs-sphinxdoc all 5.3.0-4 [130 kB]
-Get:4 http://deb.debian.org/debian bookworm/main amd64 libpython3.11 amd64 3.11.2-6+deb12u5 [1988 kB]
-Get:5 http://deb.debian.org/debian bookworm/main amd64 libpython3.11-dev amd64 3.11.2-6+deb12u5 [4739 kB]
-Get:6 http://deb.debian.org/debian bookworm/main amd64 libpython3-dev amd64 3.11.2-1+b1 [9572 B]
-Get:7 http://deb.debian.org/debian bookworm/main amd64 python3.11-dev amd64 3.11.2-6+deb12u5 [616 kB]
-Get:8 http://deb.debian.org/debian bookworm/main amd64 python3-dev amd64 3.11.2-1+b1 [26.2 kB]
-debconf: delaying package configuration, since apt-utils is not installed
-Fetched 7950 kB in 0s (75.8 MB/s)
-Selecting previously unselected package libjs-jquery.
-(Reading database ... 23967 files and directories currently installed.)
-Preparing to unpack .../0-libjs-jquery_3.6.1+dfsg+~3.5.14-1_all.deb ...
-Unpacking libjs-jquery (3.6.1+dfsg+~3.5.14-1) ...
-Selecting previously unselected package libjs-underscore.
-Preparing to unpack .../1-libjs-underscore_1.13.4~dfsg+~1.11.4-3_all.deb ...
-Unpacking libjs-underscore (1.13.4~dfsg+~1.11.4-3) ...
-Selecting previously unselected package libjs-sphinxdoc.
-Preparing to unpack .../2-libjs-sphinxdoc_5.3.0-4_all.deb ...
-Unpacking libjs-sphinxdoc (5.3.0-4) ...
-Selecting previously unselected package libpython3.11:amd64.
-Preparing to unpack .../3-libpython3.11_3.11.2-6+deb12u5_amd64.deb ...
-Unpacking libpython3.11:amd64 (3.11.2-6+deb12u5) ...
-Selecting previously unselected package libpython3.11-dev:amd64.
-Preparing to unpack .../4-libpython3.11-dev_3.11.2-6+deb12u5_amd64.deb ...
-Unpacking libpython3.11-dev:amd64 (3.11.2-6+deb12u5) ...
-Selecting previously unselected package libpython3-dev:amd64.
-Preparing to unpack .../5-libpython3-dev_3.11.2-1+b1_amd64.deb ...
-Unpacking libpython3-dev:amd64 (3.11.2-1+b1) ...
-Selecting previously unselected package python3.11-dev.
-Preparing to unpack .../6-python3.11-dev_3.11.2-6+deb12u5_amd64.deb ...
-Unpacking python3.11-dev (3.11.2-6+deb12u5) ...
-Selecting previously unselected package python3-dev.
-Preparing to unpack .../7-python3-dev_3.11.2-1+b1_amd64.deb ...
-Unpacking python3-dev (3.11.2-1+b1) ...
-Setting up libpython3.11:amd64 (3.11.2-6+deb12u5) ...
-Setting up libpython3.11-dev:amd64 (3.11.2-6+deb12u5) ...
-Setting up libjs-jquery (3.6.1+dfsg+~3.5.14-1) ...
-Setting up libjs-underscore (1.13.4~dfsg+~1.11.4-3) ...
-Setting up libpython3-dev:amd64 (3.11.2-1+b1) ...
-Setting up python3.11-dev (3.11.2-6+deb12u5) ...
-Setting up libjs-sphinxdoc (5.3.0-4) ...
-Setting up python3-dev (3.11.2-1+b1) ...
-Processing triggers for libc-bin (2.36-9+deb12u10) ...
-$ pip install -r $CI_PROJECT_DIR/requirements.txt pytest pytest-cov
-Collecting pytest
-  Downloading pytest-8.3.5-py3-none-any.whl.metadata (7.6 kB)
-Collecting pytest-cov
-  Downloading pytest_cov-6.1.1-py3-none-any.whl.metadata (28 kB)
-Collecting Flask==2.1.3 (from -r /builds/root/gestao-tarefas/requirements.txt (line 1))
-  Downloading Flask-2.1.3-py3-none-any.whl.metadata (3.9 kB)
-Collecting Werkzeug==2.0.3 (from -r /builds/root/gestao-tarefas/requirements.txt (line 2))
-  Downloading Werkzeug-2.0.3-py3-none-any.whl.metadata (4.5 kB)
-Collecting Flask-SQLAlchemy==2.5.1 (from -r /builds/root/gestao-tarefas/requirements.txt (line 3))
-  Downloading Flask_SQLAlchemy-2.5.1-py2.py3-none-any.whl.metadata (3.1 kB)
-Collecting Flask-Login==0.5.0 (from -r /builds/root/gestao-tarefas/requirements.txt (line 4))
-  Downloading Flask_Login-0.5.0-py2.py3-none-any.whl.metadata (1.7 kB)
-Collecting flask-bcrypt==1.0.1 (from -r /builds/root/gestao-tarefas/requirements.txt (line 5))
-  Downloading Flask_Bcrypt-1.0.1-py3-none-any.whl.metadata (2.6 kB)
-Collecting flask-wtf==1.2.1 (from -r /builds/root/gestao-tarefas/requirements.txt (line 6))
-  Downloading flask_wtf-1.2.1-py3-none-any.whl.metadata (3.4 kB)
-Collecting SQLAlchemy==1.4.46 (from -r /builds/root/gestao-tarefas/requirements.txt (line 7))
-  Downloading SQLAlchemy-1.4.46-cp311-cp311-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (10 kB)
-Collecting coverage (from -r /builds/root/gestao-tarefas/requirements.txt (line 10))
-  Downloading coverage-7.8.0-cp311-cp311-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (8.5 kB)
-Collecting Jinja2>=3.0 (from Flask==2.1.3->-r /builds/root/gestao-tarefas/requirements.txt (line 1))
-  Downloading jinja2-3.1.6-py3-none-any.whl.metadata (2.9 kB)
-Collecting itsdangerous>=2.0 (from Flask==2.1.3->-r /builds/root/gestao-tarefas/requirements.txt (line 1))
-  Downloading itsdangerous-2.2.0-py3-none-any.whl.metadata (1.9 kB)
-Collecting click>=8.0 (from Flask==2.1.3->-r /builds/root/gestao-tarefas/requirements.txt (line 1))
-  Downloading click-8.1.8-py3-none-any.whl.metadata (2.3 kB)
-Collecting bcrypt>=3.1.1 (from flask-bcrypt==1.0.1->-r /builds/root/gestao-tarefas/requirements.txt (line 5))
-  Downloading bcrypt-4.3.0-cp39-abi3-manylinux_2_34_x86_64.whl.metadata (10 kB)
-Collecting wtforms (from flask-wtf==1.2.1->-r /builds/root/gestao-tarefas/requirements.txt (line 6))
-  Downloading wtforms-3.2.1-py3-none-any.whl.metadata (5.3 kB)
-Collecting greenlet!=0.4.17 (from SQLAlchemy==1.4.46->-r /builds/root/gestao-tarefas/requirements.txt (line 7))
-  Downloading greenlet-3.1.1-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl.metadata (3.8 kB)
-Collecting iniconfig (from pytest)
-  Downloading iniconfig-2.1.0-py3-none-any.whl.metadata (2.7 kB)
-Collecting packaging (from pytest)
-  Downloading packaging-24.2-py3-none-any.whl.metadata (3.2 kB)
-Collecting pluggy<2,>=1.5 (from pytest)
-  Downloading pluggy-1.5.0-py3-none-any.whl.metadata (4.8 kB)
-Collecting MarkupSafe>=2.0 (from Jinja2>=3.0->Flask==2.1.3->-r /builds/root/gestao-tarefas/requirements.txt (line 1))
-  Downloading MarkupSafe-3.0.2-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (4.0 kB)
-Downloading Flask-2.1.3-py3-none-any.whl (95 kB)
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 95.6/95.6 kB 7.6 MB/s eta 0:00:00
-Downloading Werkzeug-2.0.3-py3-none-any.whl (289 kB)
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 289.2/289.2 kB 19.8 MB/s eta 0:00:00
-Downloading Flask_SQLAlchemy-2.5.1-py2.py3-none-any.whl (17 kB)
-Downloading Flask_Login-0.5.0-py2.py3-none-any.whl (16 kB)
-Downloading Flask_Bcrypt-1.0.1-py3-none-any.whl (6.0 kB)
-Downloading flask_wtf-1.2.1-py3-none-any.whl (12 kB)
-Downloading SQLAlchemy-1.4.46-cp311-cp311-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl (1.6 MB)
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.6/1.6 MB 43.8 MB/s eta 0:00:00
-Downloading pytest-8.3.5-py3-none-any.whl (343 kB)
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 343.6/343.6 kB 22.3 MB/s eta 0:00:00
-Downloading pytest_cov-6.1.1-py3-none-any.whl (23 kB)
-Downloading coverage-7.8.0-cp311-cp311-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl (244 kB)
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 244.0/244.0 kB 13.2 MB/s eta 0:00:00
-Downloading bcrypt-4.3.0-cp39-abi3-manylinux_2_34_x86_64.whl (284 kB)
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 284.2/284.2 kB 12.0 MB/s eta 0:00:00
-Downloading click-8.1.8-py3-none-any.whl (98 kB)
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 98.2/98.2 kB 7.9 MB/s eta 0:00:00
-Downloading greenlet-3.1.1-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl (602 kB)
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 602.4/602.4 kB 25.2 MB/s eta 0:00:00
-Downloading itsdangerous-2.2.0-py3-none-any.whl (16 kB)
-Downloading jinja2-3.1.6-py3-none-any.whl (134 kB)
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 134.9/134.9 kB 9.6 MB/s eta 0:00:00
-Downloading pluggy-1.5.0-py3-none-any.whl (20 kB)
-Downloading iniconfig-2.1.0-py3-none-any.whl (6.0 kB)
-Downloading packaging-24.2-py3-none-any.whl (65 kB)
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 65.5/65.5 kB 5.0 MB/s eta 0:00:00
-Downloading wtforms-3.2.1-py3-none-any.whl (152 kB)
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 152.5/152.5 kB 11.0 MB/s eta 0:00:00
-Downloading MarkupSafe-3.0.2-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (23 kB)
-Installing collected packages: Werkzeug, pluggy, packaging, MarkupSafe, itsdangerous, iniconfig, greenlet, coverage, click, bcrypt, wtforms, SQLAlchemy, pytest, Jinja2, pytest-cov, Flask, flask-wtf, Flask-SQLAlchemy, Flask-Login, flask-bcrypt
-Successfully installed Flask-2.1.3 Flask-Login-0.5.0 Flask-SQLAlchemy-2.5.1 Jinja2-3.1.6 MarkupSafe-3.0.2 SQLAlchemy-1.4.46 Werkzeug-2.0.3 bcrypt-4.3.0 click-8.1.8 coverage-7.8.0 flask-bcrypt-1.0.1 flask-wtf-1.2.1 greenlet-3.1.1 iniconfig-2.1.0 itsdangerous-2.2.0 packaging-24.2 pluggy-1.5.0 pytest-8.3.5 pytest-cov-6.1.1 wtforms-3.2.1
-WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv
-[notice] A new release of pip is available: 24.0 -> 25.0.1
-[notice] To update, run: pip install --upgrade pip
-$ export PYTHONPATH=$CI_PROJECT_DIR/todo_project
-$ cd $CI_PROJECT_DIR
-$ pytest --cov=./ --cov-report=xml -v $CI_PROJECT_DIR/tests/
-============================= test session starts ==============================
-platform linux -- Python 3.11.12, pytest-8.3.5, pluggy-1.5.0 -- /usr/local/bin/python3.11
-cachedir: .pytest_cache
-rootdir: /builds/root/gestao-tarefas
-plugins: cov-6.1.1
-collecting ... collected 17 items
-tests/test_forms.py::test_registration_form PASSED                       [  5%]
-tests/test_forms.py::test_login_form PASSED                              [ 11%]
-tests/test_forms.py::test_update_user_info_form PASSED                   [ 17%]
-tests/test_forms.py::test_update_user_password_form PASSED               [ 23%]
-tests/test_forms.py::test_task_form PASSED                               [ 29%]
-tests/test_forms.py::test_update_task_form PASSED                        [ 35%]
-tests/test_models.py::test_user_model PASSED                             [ 41%]
-tests/test_models.py::test_task_model PASSED                             [ 47%]
-tests/test_routes.py::test_about PASSED                                  [ 52%]
-tests/test_routes.py::test_login PASSED                                  [ 58%]
-tests/test_routes.py::test_register PASSED                               [ 64%]
-tests/test_routes.py::test_add_task PASSED                               [ 70%]
-tests/test_routes.py::test_all_tasks PASSED                              [ 76%]
-tests/test_routes.py::test_update_task PASSED                            [ 82%]
-tests/test_routes.py::test_delete_task PASSED                            [ 88%]
-tests/test_routes.py::test_account PASSED                                [ 94%]
-tests/test_routes.py::test_change_password PASSED                        [100%]
-=============================== warnings summary ===============================
-../../../usr/local/lib/python3.11/site-packages/flask_sqlalchemy/__init__.py:872
-  /usr/local/lib/python3.11/site-packages/flask_sqlalchemy/__init__.py:872: FSADeprecationWarning: SQLALCHEMY_TRACK_MODIFICATIONS adds significant overhead and will be disabled by default in the future.  Set it to True or False to suppress this warning.
-    warnings.warn(FSADeprecationWarning(
-tests/test_models.py::test_task_model
-  /builds/root/gestao-tarefas/tests/test_models.py:26: RemovedIn20Warning: Deprecated API features detected! These feature(s) are not compatible with SQLAlchemy 2.0. To prevent incompatible upgrades prior to updating applications, ensure requirements files are pinned to "sqlalchemy<2.0". Set environment variable SQLALCHEMY_WARN_20=1 to show all deprecation warnings.  Set environment variable SQLALCHEMY_SILENCE_UBER_WARNING=1 to silence this message. (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
-    task = Task(content='Test Task', author=user)
--- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-================================ tests coverage ================================
-_______________ coverage: platform linux, python 3.11.12-final-0 _______________
-Coverage XML written to file coverage.xml
-======================== 17 passed, 2 warnings in 8.61s ========================
-Uploading artifacts for successful job 00:05
+Uploading artifacts for failed job 00:01
 Uploading artifacts...
-/builds/root/gestao-tarefas/coverage.xml: found 1 matching artifact files and directories 
-WARNING: Uploading artifacts as "archive" to coordinator... 500 Internal Server Error  id=186 responseStatus=500 Internal Server Error status=500 token=64_hgPy41
-WARNING: Retrying...                                context=artifacts-uploader error=invalid argument
-WARNING: Uploading artifacts as "archive" to coordinator... 500 Internal Server Error  id=186 responseStatus=500 Internal Server Error status=500 token=64_hgPy41
-WARNING: Retrying...                                context=artifacts-uploader error=invalid argument
-WARNING: Uploading artifacts as "archive" to coordinator... 500 Internal Server Error  id=186 responseStatus=500 Internal Server Error status=500 token=64_hgPy41
-FATAL: invalid argument                            
+WARNING: /builds/root/gestao-tarefas/coverage.xml: no matching files. Ensure that the artifact path is relative to the working directory (/builds/root/gestao-tarefas) 
+ERROR: No files to upload                          
 Cleaning up project directory and file based variables 00:01
 ERROR: Job failed: exit code 1
