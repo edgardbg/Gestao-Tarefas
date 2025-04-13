@@ -1,5 +1,5 @@
 import pytest
-from todo_project.forms import RegistrationForm, LoginForm, UpdateUserInfoForm, UpdateUserPassword, TaskForm, UpdateTaskForm
+from todo_project.todo_project.forms import RegistrationForm, LoginForm, UpdateUserInfoForm, UpdateUserPassword, TaskForm, UpdateTaskForm
 
 def test_registration_form():
     form = RegistrationForm(username='testuser', password='password', confirm_password='password')

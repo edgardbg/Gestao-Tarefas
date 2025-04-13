@@ -1,5 +1,5 @@
 import pytest
-from todo_project import app, db, bcrypt
+from todo_project.todo_project import app, db, bcrypt
 from todo_project.models import User, Task
 from todo_project.forms import (LoginForm, RegistrationForm, UpdateUserInfoForm, 
                                 UpdateUserPassword, TaskForm, UpdateTaskForm)
@@ -146,7 +146,7 @@ def test_change_password(client):
     db.session.add(user)
     db.session.commit()
 
-    client.post('/login', data=dict(
+    client.post('/login', data.dict(
         username='testuser',
         password='password'
     ), follow_redirects=True)

@@ -1,5 +1,5 @@
 import pytest
-from todo_project import db
+from todo_project.todo_project import db
 from todo_project.models import User, Task
 
 def test_user_model():
