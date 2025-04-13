@@ -1,8 +1,22 @@
 import pytest
-from todo_project import app
+from todo_project import app, db
+from todo_project.models import User
 from todo_project.forms import RegistrationForm, LoginForm, UpdateUserInfoForm, UpdateUserPassword, TaskForm, UpdateTaskForm
 
-def test_registration_form():
+@pytest.fixture
+def setup():
+    app.config['TESTING'] = True
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
+    with app.app_context():
+        db.create_all()
+        user = User(username='existinguser', password='password')
+        db.session.add(user)
+        db.session.commit()
+        yield
+        db.session.remove()
+        db.drop_all()
+
+def test_registration_form(setup):
     with app.test_request_context():
         form = RegistrationForm(username='testuser', password='password', confirm_password='password')
         assert form.validate() is True
