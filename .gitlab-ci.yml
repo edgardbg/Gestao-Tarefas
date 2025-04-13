@@ -9,6 +9,7 @@ stages:
   - build
   - test
   - deploy
+  - post-deploy
   - notify
 
 build_job:
@@ -93,7 +94,7 @@ deploy_stage:
     - docker run -d -p 8080:8080 ex-build-dev:latest
 
 dast_job:
-  stage: test
+  stage: post-deploy
   image: owasp/zap2docker-stable
   script:
     - zap-baseline.py -t http://localhost:8080 -r zap_report.html
@@ -101,5 +102,3 @@ dast_job:
     paths:
       - zap_report.html
     expire_in: 1 week
-  needs:
-    - deploy_stage
