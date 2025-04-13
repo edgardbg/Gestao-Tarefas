@@ -2,7 +2,13 @@ import pytest
 from todo_project import db
 from todo_project.models import User, Task
 
-def test_user_model():
+@pytest.fixture(scope='module')
+def setup():
+    db.create_all()
+    yield
+    db.drop_all()
+
+def test_user_model(setup):
     user = User(username='testuser', password='password')
     db.session.add(user)
     db.session.commit()
@@ -12,7 +18,7 @@ def test_user_model():
     assert user.password == 'password'
     assert user.tasks == []
 
-def test_task_model():
+def test_task_model(setup):
     user = User(username='testuser', password='password')
     db.session.add(user)
     db.session.commit()

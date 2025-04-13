@@ -12,6 +12,8 @@ def client():
         with app.app_context():
             db.create_all()
         yield client
+        with app.app_context():
+            db.drop_all()
 
 def test_about(client):
     response = client.get('/about')
@@ -146,7 +148,7 @@ def test_change_password(client):
     db.session.add(user)
     db.session.commit()
 
-    client.post('/login', data.dict(
+    client.post('/login', data=dict(
         username='testuser',
         password='password'
     ), follow_redirects=True)
