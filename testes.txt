@@ -1,0 +1,1651 @@
+_____ test_user_model _____
+self = <sqlalchemy.engine.base.Connection object at 0x7f9cdc0cc610>
+dialect = <sqlalchemy.dialects.sqlite.pysqlite.SQLiteDialect_pysqlite object at 0x7f9cdbf43750>
+constructor = <bound method DefaultExecutionContext._init_compiled of <class 'sqlalchemy.dialects.sqlite.base.SQLiteExecutionContext'>>
+statement = 'INSERT INTO user (username, password) VALUES (?, ?)'
+parameters = ('testuser', 'password')
+execution_options = immutabledict({'autocommit': True, 'compiled_cache': {(<sqlalchemy.dialects.sqlite.pysqlite.SQLiteDialect_pysqlite obj...password', 'username'), False, False), <sqlalchemy.dialects.sqlite.base.SQLiteCompiler object at 0x7f9cdc0b9990>, 3]}})
+args = (<sqlalchemy.dialects.sqlite.base.SQLiteCompiler object at 0x7f9cdc0b9990>, [{'password': 'password', 'username': 'testuser'}], <sqlalchemy.sql.dml.Insert object at 0x7f9cdc0b8ed0>, [])
+kw = {'cache_hit': symbol('CACHE_HIT')}
+branched = <sqlalchemy.engine.base.Connection object at 0x7f9cdc0cc610>
+yp = None
+conn = <sqlalchemy.pool.base._ConnectionFairy object at 0x7f9cdc0cc810>
+context = <sqlalchemy.dialects.sqlite.base.SQLiteExecutionContext object at 0x7f9cdc0cc8d0>
+cursor = <sqlite3.Cursor object at 0x7f9cdbfab4c0>
+fn = <function ConnectionEvents._listen.<locals>.wrap_before_cursor_execute at 0x7f9cdc0c0f40>
+evt_handled = False
+    def _execute_context(
+        self,
+        dialect,
+        constructor,
+        statement,
+        parameters,
+        execution_options,
+        *args,
+        **kw
+    ):
+        """Create an :class:`.ExecutionContext` and execute, returning
+        a :class:`_engine.CursorResult`."""
+    
+        branched = self
+        if self.__branch_from:
+            # if this is a "branched" connection, do everything in terms
+            # of the "root" connection, *except* for .close(), which is
+            # the only feature that branching provides
+            self = self.__branch_from
+    
+        if execution_options:
+            yp = execution_options.get("yield_per", None)
+            if yp:
+                execution_options = execution_options.union(
+                    {"stream_results": True, "max_row_buffer": yp}
+                )
+    
+        try:
+            conn = self._dbapi_connection
+            if conn is None:
+                conn = self._revalidate_connection()
+    
+            context = constructor(
+                dialect, self, conn, execution_options, *args, **kw
+            )
+        except (exc.PendingRollbackError, exc.ResourceClosedError):
+            raise
+        except BaseException as e:
+            self._handle_dbapi_exception(
+                e, util.text_type(statement), parameters, None, None
+            )
+    
+        if (
+            self._transaction
+            and not self._transaction.is_active
+            or (
+                self._nested_transaction
+                and not self._nested_transaction.is_active
+            )
+        ):
+            self._invalid_transaction()
+    
+        elif self._trans_context_manager:
+            TransactionalContext._trans_ctx_check(self)
+    
+        if self._is_future and self._transaction is None:
+            self._autobegin()
+    
+        context.pre_exec()
+    
+        if dialect.use_setinputsizes:
+            context._set_input_sizes()
+    
+        cursor, statement, parameters = (
+            context.cursor,
+            context.statement,
+            context.parameters,
+        )
+    
+        if not context.executemany:
+            parameters = parameters[0]
+    
+        if self._has_events or self.engine._has_events:
+            for fn in self.dispatch.before_cursor_execute:
+                statement, parameters = fn(
+                    self,
+                    cursor,
+                    statement,
+                    parameters,
+                    context,
+                    context.executemany,
+                )
+    
+        if self._echo:
+    
+            self._log_info(statement)
+    
+            stats = context._get_cache_stats()
+    
+            if not self.engine.hide_parameters:
+                self._log_info(
+                    "[%s] %r",
+                    stats,
+                    sql_util._repr_params(
+                        parameters, batches=10, ismulti=context.executemany
+                    ),
+                )
+            else:
+                self._log_info(
+                    "[%s] [SQL parameters hidden due to hide_parameters=True]"
+                    % (stats,)
+                )
+    
+        evt_handled = False
+        try:
+            if context.executemany:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_executemany:
+                        if fn(cursor, statement, parameters, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_executemany(
+                        cursor, statement, parameters, context
+                    )
+            elif not parameters and context.no_parameters:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute_no_params:
+                        if fn(cursor, statement, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_execute_no_params(
+                        cursor, statement, context
+                    )
+            else:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute:
+                        if fn(cursor, statement, parameters, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+>                   self.dialect.do_execute(
+                        cursor, statement, parameters, context
+                    )
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1900: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+self = <sqlalchemy.dialects.sqlite.pysqlite.SQLiteDialect_pysqlite object at 0x7f9cdbf43750>
+cursor = <sqlite3.Cursor object at 0x7f9cdbfab4c0>
+statement = 'INSERT INTO user (username, password) VALUES (?, ?)'
+parameters = ('testuser', 'password')
+context = <sqlalchemy.dialects.sqlite.base.SQLiteExecutionContext object at 0x7f9cdc0cc8d0>
+    def do_execute(self, cursor, statement, parameters, context=None):
+>       cursor.execute(statement, parameters)
+E       sqlite3.OperationalError: no such table: user
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py:736: OperationalError
+The above exception was the direct cause of the following exception:
+    def test_user_model():
+        user = User(username='testuser', password='password')
+        db.session.add(user)
+>       db.session.commit()
+tests/test_models.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+<string>:2: in commit
+    ???
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1451: in commit
+    self._transaction.commit(_to_root=self.future)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:829: in commit
+    self._prepare_impl()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:808: in _prepare_impl
+    self.session.flush()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:3444: in flush
+    self._flush(objects)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:3583: in _flush
+    with util.safe_reraise():
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:70: in __exit__
+    compat.raise_(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/compat.py:211: in raise_
+    raise exception
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:3544: in _flush
+    flush_context.execute()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:456: in execute
+    rec.execute(self)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:630: in execute
+    util.preloaded.orm_persistence.save_obj(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:245: in save_obj
+    _emit_insert_statements(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1238: in _emit_insert_statements
+    result = connection._execute_20(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1705: in _execute_20
+    return meth(self, args_10style, kwargs_10style, execution_options)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:334: in _execute_on_connection
+    return connection._execute_clauseelement(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1572: in _execute_clauseelement
+    ret = self._execute_context(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1943: in _execute_context
+    self._handle_dbapi_exception(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2124: in _handle_dbapi_exception
+    util.raise_(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/compat.py:211: in raise_
+    raise exception
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1900: in _execute_context
+    self.dialect.do_execute(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+self = <sqlalchemy.dialects.sqlite.pysqlite.SQLiteDialect_pysqlite object at 0x7f9cdbf43750>
+cursor = <sqlite3.Cursor object at 0x7f9cdbfab4c0>
+statement = 'INSERT INTO user (username, password) VALUES (?, ?)'
+parameters = ('testuser', 'password')
+context = <sqlalchemy.dialects.sqlite.base.SQLiteExecutionContext object at 0x7f9cdc0cc8d0>
+    def do_execute(self, cursor, statement, parameters, context=None):
+>       cursor.execute(statement, parameters)
+E       sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such table: user
+E       [SQL: INSERT INTO user (username, password) VALUES (?, ?)]
+E       [parameters: ('testuser', 'password')]
+E       (Background on this error at: https://sqlalche.me/e/14/e3q8)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py:736: OperationalError
+
+
+
+
+
+_____ test_task_model _____
+    def test_task_model():
+        user = User(username='testuser', password='password')
+        db.session.add(user)
+>       db.session.commit()
+tests/test_models.py:18: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+<string>:2: in commit
+    ???
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1451: in commit
+    self._transaction.commit(_to_root=self.future)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:827: in commit
+    self._assert_active(prepared_ok=True)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+self = <sqlalchemy.orm.session.SessionTransaction object at 0x7f9cdc0cf1d0>
+prepared_ok = True, rollback_ok = False, deactive_ok = False
+closed_msg = 'This transaction is closed'
+    def _assert_active(
+        self,
+        prepared_ok=False,
+        rollback_ok=False,
+        deactive_ok=False,
+        closed_msg="This transaction is closed",
+    ):
+        if self._state is COMMITTED:
+            raise sa_exc.InvalidRequestError(
+                "This session is in 'committed' state; no further "
+                "SQL can be emitted within this transaction."
+            )
+        elif self._state is PREPARED:
+            if not prepared_ok:
+                raise sa_exc.InvalidRequestError(
+                    "This session is in 'prepared' state; no further "
+                    "SQL can be emitted within this transaction."
+                )
+        elif self._state is DEACTIVE:
+            if not deactive_ok and not rollback_ok:
+                if self._rollback_exception:
+>                   raise sa_exc.PendingRollbackError(
+                        "This Session's transaction has been rolled back "
+                        "due to a previous exception during flush."
+                        " To begin a new transaction with this Session, "
+                        "first issue Session.rollback()."
+                        " Original exception was: %s"
+                        % self._rollback_exception,
+                        code="7s2a",
+E                       sqlalchemy.exc.PendingRollbackError: This Session's transaction has been rolled back due to a previous exception during flush. To begin a new transaction with this Session, first issue Session.rollback(). Original exception was: (sqlite3.OperationalError) no such table: user
+E                       [SQL: INSERT INTO user (username, password) VALUES (?, ?)]
+E                       [parameters: ('testuser', 'password')]
+E                       (Background on this error at: https://sqlalche.me/e/14/e3q8) (Background on this error at: https://sqlalche.me/e/14/7s2a)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:601: PendingRollbackError
+
+
+
+
+
+_____ test_add_task _____
+self = <sqlalchemy.engine.base.Connection object at 0x7f9cdb966650>
+dialect = <sqlalchemy.dialects.sqlite.pysqlite.SQLiteDialect_pysqlite object at 0x7f9cdbf43750>
+constructor = <bound method DefaultExecutionContext._init_compiled of <class 'sqlalchemy.dialects.sqlite.base.SQLiteExecutionContext'>>
+statement = 'INSERT INTO user (username, password) VALUES (?, ?)'
+parameters = ('testuser', '$2b$12$YkN9n6z3yHFuZ5V10DLKgO53dgCu3NUfbKNx2CVahyfEibSyjaX5u')
+execution_options = immutabledict({'autocommit': True, 'compiled_cache': {(<sqlalchemy.dialects.sqlite.pysqlite.SQLiteDialect_pysqlite obj...password', 'username'), False, False), <sqlalchemy.dialects.sqlite.base.SQLiteCompiler object at 0x7f9cdc0b9990>, 6]}})
+args = (<sqlalchemy.dialects.sqlite.base.SQLiteCompiler object at 0x7f9cdc0b9990>, [{'password': '$2b$12$YkN9n6z3yHFuZ5V10DLKgO53dgCu3NUfbKNx2CVahyfEibSyjaX5u', 'username': 'testuser'}], <sqlalchemy.sql.dml.Insert object at 0x7f9cdc0b8ed0>, [])
+kw = {'cache_hit': symbol('CACHE_HIT')}
+branched = <sqlalchemy.engine.base.Connection object at 0x7f9cdb966650>
+yp = None
+conn = <sqlalchemy.pool.base._ConnectionFairy object at 0x7f9cdb967950>
+context = <sqlalchemy.dialects.sqlite.base.SQLiteExecutionContext object at 0x7f9cdb964850>
+cursor = <sqlite3.Cursor object at 0x7f9cdbf32dc0>
+fn = <function ConnectionEvents._listen.<locals>.wrap_before_cursor_execute at 0x7f9cdc0c0f40>
+evt_handled = False
+    def _execute_context(
+        self,
+        dialect,
+        constructor,
+        statement,
+        parameters,
+        execution_options,
+        *args,
+        **kw
+    ):
+        """Create an :class:`.ExecutionContext` and execute, returning
+        a :class:`_engine.CursorResult`."""
+    
+        branched = self
+        if self.__branch_from:
+            # if this is a "branched" connection, do everything in terms
+            # of the "root" connection, *except* for .close(), which is
+            # the only feature that branching provides
+            self = self.__branch_from
+    
+        if execution_options:
+            yp = execution_options.get("yield_per", None)
+            if yp:
+                execution_options = execution_options.union(
+                    {"stream_results": True, "max_row_buffer": yp}
+                )
+    
+        try:
+            conn = self._dbapi_connection
+            if conn is None:
+                conn = self._revalidate_connection()
+    
+            context = constructor(
+                dialect, self, conn, execution_options, *args, **kw
+            )
+        except (exc.PendingRollbackError, exc.ResourceClosedError):
+            raise
+        except BaseException as e:
+            self._handle_dbapi_exception(
+                e, util.text_type(statement), parameters, None, None
+            )
+    
+        if (
+            self._transaction
+            and not self._transaction.is_active
+            or (
+                self._nested_transaction
+                and not self._nested_transaction.is_active
+            )
+        ):
+            self._invalid_transaction()
+    
+        elif self._trans_context_manager:
+            TransactionalContext._trans_ctx_check(self)
+    
+        if self._is_future and self._transaction is None:
+            self._autobegin()
+    
+        context.pre_exec()
+    
+        if dialect.use_setinputsizes:
+            context._set_input_sizes()
+    
+        cursor, statement, parameters = (
+            context.cursor,
+            context.statement,
+            context.parameters,
+        )
+    
+        if not context.executemany:
+            parameters = parameters[0]
+    
+        if self._has_events or self.engine._has_events:
+            for fn in self.dispatch.before_cursor_execute:
+                statement, parameters = fn(
+                    self,
+                    cursor,
+                    statement,
+                    parameters,
+                    context,
+                    context.executemany,
+                )
+    
+        if self._echo:
+    
+            self._log_info(statement)
+    
+            stats = context._get_cache_stats()
+    
+            if not self.engine.hide_parameters:
+                self._log_info(
+                    "[%s] %r",
+                    stats,
+                    sql_util._repr_params(
+                        parameters, batches=10, ismulti=context.executemany
+                    ),
+                )
+            else:
+                self._log_info(
+                    "[%s] [SQL parameters hidden due to hide_parameters=True]"
+                    % (stats,)
+                )
+    
+        evt_handled = False
+        try:
+            if context.executemany:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_executemany:
+                        if fn(cursor, statement, parameters, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_executemany(
+                        cursor, statement, parameters, context
+                    )
+            elif not parameters and context.no_parameters:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute_no_params:
+                        if fn(cursor, statement, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_execute_no_params(
+                        cursor, statement, context
+                    )
+            else:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute:
+                        if fn(cursor, statement, parameters, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+>                   self.dialect.do_execute(
+                        cursor, statement, parameters, context
+                    )
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1900: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+self = <sqlalchemy.dialects.sqlite.pysqlite.SQLiteDialect_pysqlite object at 0x7f9cdbf43750>
+cursor = <sqlite3.Cursor object at 0x7f9cdbf32dc0>
+statement = 'INSERT INTO user (username, password) VALUES (?, ?)'
+parameters = ('testuser', '$2b$12$YkN9n6z3yHFuZ5V10DLKgO53dgCu3NUfbKNx2CVahyfEibSyjaX5u')
+context = <sqlalchemy.dialects.sqlite.base.SQLiteExecutionContext object at 0x7f9cdb964850>
+    def do_execute(self, cursor, statement, parameters, context=None):
+>       cursor.execute(statement, parameters)
+E       sqlite3.IntegrityError: UNIQUE constraint failed: user.username
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py:736: IntegrityError
+The above exception was the direct cause of the following exception:
+client = <FlaskClient <Flask 'todo_project'>>
+    def test_add_task(client):
+        hashed_password = bcrypt.generate_password_hash('password').decode('utf-8')
+        user = User(username='testuser', password=hashed_password)
+        db.session.add(user)
+>       db.session.commit()
+tests/test_routes.py:49: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+<string>:2: in commit
+    ???
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1451: in commit
+    self._transaction.commit(_to_root=self.future)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:829: in commit
+    self._prepare_impl()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:808: in _prepare_impl
+    self.session.flush()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:3444: in flush
+    self._flush(objects)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:3583: in _flush
+    with util.safe_reraise():
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:70: in __exit__
+    compat.raise_(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/compat.py:211: in raise_
+    raise exception
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:3544: in _flush
+    flush_context.execute()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:456: in execute
+    rec.execute(self)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:630: in execute
+    util.preloaded.orm_persistence.save_obj(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:245: in save_obj
+    _emit_insert_statements(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1238: in _emit_insert_statements
+    result = connection._execute_20(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1705: in _execute_20
+    return meth(self, args_10style, kwargs_10style, execution_options)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:334: in _execute_on_connection
+    return connection._execute_clauseelement(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1572: in _execute_clauseelement
+    ret = self._execute_context(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1943: in _execute_context
+    self._handle_dbapi_exception(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2124: in _handle_dbapi_exception
+    util.raise_(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/compat.py:211: in raise_
+    raise exception
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1900: in _execute_context
+    self.dialect.do_execute(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+self = <sqlalchemy.dialects.sqlite.pysqlite.SQLiteDialect_pysqlite object at 0x7f9cdbf43750>
+cursor = <sqlite3.Cursor object at 0x7f9cdbf32dc0>
+statement = 'INSERT INTO user (username, password) VALUES (?, ?)'
+parameters = ('testuser', '$2b$12$YkN9n6z3yHFuZ5V10DLKgO53dgCu3NUfbKNx2CVahyfEibSyjaX5u')
+context = <sqlalchemy.dialects.sqlite.base.SQLiteExecutionContext object at 0x7f9cdb964850>
+    def do_execute(self, cursor, statement, parameters, context=None):
+>       cursor.execute(statement, parameters)
+E       sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) UNIQUE constraint failed: user.username
+E       [SQL: INSERT INTO user (username, password) VALUES (?, ?)]
+E       [parameters: ('testuser', '$2b$12$YkN9n6z3yHFuZ5V10DLKgO53dgCu3NUfbKNx2CVahyfEibSyjaX5u')]
+E       (Background on this error at: https://sqlalche.me/e/14/gkpj)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py:736: IntegrityError
+
+
+
+
+
+_____ test_all_tasks _____
+self = <sqlalchemy.engine.base.Connection object at 0x7f9cdbc11410>
+dialect = <sqlalchemy.dialects.sqlite.pysqlite.SQLiteDialect_pysqlite object at 0x7f9cdbf43750>
+constructor = <bound method DefaultExecutionContext._init_compiled of <class 'sqlalchemy.dialects.sqlite.base.SQLiteExecutionContext'>>
+statement = 'INSERT INTO user (username, password) VALUES (?, ?)'
+parameters = ('testuser', '$2b$12$fL4gwdbA/ZubP/ubUmUZe.kPSnQhb77gzWxFkZBWeB8SUxAlEqTBG')
+execution_options = immutabledict({'autocommit': True, 'compiled_cache': {(<sqlalchemy.dialects.sqlite.pysqlite.SQLiteDialect_pysqlite obj...password', 'username'), False, False), <sqlalchemy.dialects.sqlite.base.SQLiteCompiler object at 0x7f9cdc0b9990>, 7]}})
+args = (<sqlalchemy.dialects.sqlite.base.SQLiteCompiler object at 0x7f9cdc0b9990>, [{'password': '$2b$12$fL4gwdbA/ZubP/ubUmUZe.kPSnQhb77gzWxFkZBWeB8SUxAlEqTBG', 'username': 'testuser'}], <sqlalchemy.sql.dml.Insert object at 0x7f9cdc0b8ed0>, [])
+kw = {'cache_hit': symbol('CACHE_HIT')}
+branched = <sqlalchemy.engine.base.Connection object at 0x7f9cdbc11410>
+yp = None
+conn = <sqlalchemy.pool.base._ConnectionFairy object at 0x7f9cdbc11310>
+context = <sqlalchemy.dialects.sqlite.base.SQLiteExecutionContext object at 0x7f9cdbc133d0>
+cursor = <sqlite3.Cursor object at 0x7f9cdb640cc0>
+fn = <function ConnectionEvents._listen.<locals>.wrap_before_cursor_execute at 0x7f9cdc0c0f40>
+evt_handled = False
+    def _execute_context(
+        self,
+        dialect,
+        constructor,
+        statement,
+        parameters,
+        execution_options,
+        *args,
+        **kw
+    ):
+        """Create an :class:`.ExecutionContext` and execute, returning
+        a :class:`_engine.CursorResult`."""
+    
+        branched = self
+        if self.__branch_from:
+            # if this is a "branched" connection, do everything in terms
+            # of the "root" connection, *except* for .close(), which is
+            # the only feature that branching provides
+            self = self.__branch_from
+    
+        if execution_options:
+            yp = execution_options.get("yield_per", None)
+            if yp:
+                execution_options = execution_options.union(
+                    {"stream_results": True, "max_row_buffer": yp}
+                )
+    
+        try:
+            conn = self._dbapi_connection
+            if conn is None:
+                conn = self._revalidate_connection()
+    
+            context = constructor(
+                dialect, self, conn, execution_options, *args, **kw
+            )
+        except (exc.PendingRollbackError, exc.ResourceClosedError):
+            raise
+        except BaseException as e:
+            self._handle_dbapi_exception(
+                e, util.text_type(statement), parameters, None, None
+            )
+    
+        if (
+            self._transaction
+            and not self._transaction.is_active
+            or (
+                self._nested_transaction
+                and not self._nested_transaction.is_active
+            )
+        ):
+            self._invalid_transaction()
+    
+        elif self._trans_context_manager:
+            TransactionalContext._trans_ctx_check(self)
+    
+        if self._is_future and self._transaction is None:
+            self._autobegin()
+    
+        context.pre_exec()
+    
+        if dialect.use_setinputsizes:
+            context._set_input_sizes()
+    
+        cursor, statement, parameters = (
+            context.cursor,
+            context.statement,
+            context.parameters,
+        )
+    
+        if not context.executemany:
+            parameters = parameters[0]
+    
+        if self._has_events or self.engine._has_events:
+            for fn in self.dispatch.before_cursor_execute:
+                statement, parameters = fn(
+                    self,
+                    cursor,
+                    statement,
+                    parameters,
+                    context,
+                    context.executemany,
+                )
+    
+        if self._echo:
+    
+            self._log_info(statement)
+    
+            stats = context._get_cache_stats()
+    
+            if not self.engine.hide_parameters:
+                self._log_info(
+                    "[%s] %r",
+                    stats,
+                    sql_util._repr_params(
+                        parameters, batches=10, ismulti=context.executemany
+                    ),
+                )
+            else:
+                self._log_info(
+                    "[%s] [SQL parameters hidden due to hide_parameters=True]"
+                    % (stats,)
+                )
+    
+        evt_handled = False
+        try:
+            if context.executemany:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_executemany:
+                        if fn(cursor, statement, parameters, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_executemany(
+                        cursor, statement, parameters, context
+                    )
+            elif not parameters and context.no_parameters:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute_no_params:
+                        if fn(cursor, statement, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_execute_no_params(
+                        cursor, statement, context
+                    )
+            else:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute:
+                        if fn(cursor, statement, parameters, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+>                   self.dialect.do_execute(
+                        cursor, statement, parameters, context
+                    )
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1900: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+self = <sqlalchemy.dialects.sqlite.pysqlite.SQLiteDialect_pysqlite object at 0x7f9cdbf43750>
+cursor = <sqlite3.Cursor object at 0x7f9cdb640cc0>
+statement = 'INSERT INTO user (username, password) VALUES (?, ?)'
+parameters = ('testuser', '$2b$12$fL4gwdbA/ZubP/ubUmUZe.kPSnQhb77gzWxFkZBWeB8SUxAlEqTBG')
+context = <sqlalchemy.dialects.sqlite.base.SQLiteExecutionContext object at 0x7f9cdbc133d0>
+    def do_execute(self, cursor, statement, parameters, context=None):
+>       cursor.execute(statement, parameters)
+E       sqlite3.IntegrityError: UNIQUE constraint failed: user.username
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py:736: IntegrityError
+The above exception was the direct cause of the following exception:
+client = <FlaskClient <Flask 'todo_project'>>
+    def test_all_tasks(client):
+        hashed_password = bcrypt.generate_password_hash('password').decode('utf-8')
+        user = User(username='testuser', password=hashed_password)
+        db.session.add(user)
+>       db.session.commit()
+tests/test_routes.py:67: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+<string>:2: in commit
+    ???
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1451: in commit
+    self._transaction.commit(_to_root=self.future)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:829: in commit
+    self._prepare_impl()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:808: in _prepare_impl
+    self.session.flush()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:3444: in flush
+    self._flush(objects)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:3583: in _flush
+    with util.safe_reraise():
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:70: in __exit__
+    compat.raise_(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/compat.py:211: in raise_
+    raise exception
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:3544: in _flush
+    flush_context.execute()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:456: in execute
+    rec.execute(self)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:630: in execute
+    util.preloaded.orm_persistence.save_obj(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:245: in save_obj
+    _emit_insert_statements(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1238: in _emit_insert_statements
+    result = connection._execute_20(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1705: in _execute_20
+    return meth(self, args_10style, kwargs_10style, execution_options)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:334: in _execute_on_connection
+    return connection._execute_clauseelement(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1572: in _execute_clauseelement
+    ret = self._execute_context(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1943: in _execute_context
+    self._handle_dbapi_exception(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2124: in _handle_dbapi_exception
+    util.raise_(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/compat.py:211: in raise_
+    raise exception
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1900: in _execute_context
+    self.dialect.do_execute(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+self = <sqlalchemy.dialects.sqlite.pysqlite.SQLiteDialect_pysqlite object at 0x7f9cdbf43750>
+cursor = <sqlite3.Cursor object at 0x7f9cdb640cc0>
+statement = 'INSERT INTO user (username, password) VALUES (?, ?)'
+parameters = ('testuser', '$2b$12$fL4gwdbA/ZubP/ubUmUZe.kPSnQhb77gzWxFkZBWeB8SUxAlEqTBG')
+context = <sqlalchemy.dialects.sqlite.base.SQLiteExecutionContext object at 0x7f9cdbc133d0>
+    def do_execute(self, cursor, statement, parameters, context=None):
+>       cursor.execute(statement, parameters)
+E       sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) UNIQUE constraint failed: user.username
+E       [SQL: INSERT INTO user (username, password) VALUES (?, ?)]
+E       [parameters: ('testuser', '$2b$12$fL4gwdbA/ZubP/ubUmUZe.kPSnQhb77gzWxFkZBWeB8SUxAlEqTBG')]
+E       (Background on this error at: https://sqlalche.me/e/14/gkpj)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py:736: IntegrityError
+
+
+
+
+
+____ test_update_task _____
+self = <sqlalchemy.engine.base.Connection object at 0x7f9cdbbeab90>
+dialect = <sqlalchemy.dialects.sqlite.pysqlite.SQLiteDialect_pysqlite object at 0x7f9cdbf43750>
+constructor = <bound method DefaultExecutionContext._init_compiled of <class 'sqlalchemy.dialects.sqlite.base.SQLiteExecutionContext'>>
+statement = 'INSERT INTO user (username, password) VALUES (?, ?)'
+parameters = ('testuser', '$2b$12$ewF8sn0XHgoT0366ey6yv.57jQvv7urNFnuSHmWkRTCd3Gbb9.zn.')
+execution_options = immutabledict({'autocommit': True, 'compiled_cache': {(<sqlalchemy.dialects.sqlite.pysqlite.SQLiteDialect_pysqlite obj...password', 'username'), False, False), <sqlalchemy.dialects.sqlite.base.SQLiteCompiler object at 0x7f9cdc0b9990>, 8]}})
+args = (<sqlalchemy.dialects.sqlite.base.SQLiteCompiler object at 0x7f9cdc0b9990>, [{'password': '$2b$12$ewF8sn0XHgoT0366ey6yv.57jQvv7urNFnuSHmWkRTCd3Gbb9.zn.', 'username': 'testuser'}], <sqlalchemy.sql.dml.Insert object at 0x7f9cdc0b8ed0>, [])
+kw = {'cache_hit': symbol('CACHE_HIT')}
+branched = <sqlalchemy.engine.base.Connection object at 0x7f9cdbbeab90>
+yp = None
+conn = <sqlalchemy.pool.base._ConnectionFairy object at 0x7f9cdbbeab50>
+context = <sqlalchemy.dialects.sqlite.base.SQLiteExecutionContext object at 0x7f9cdbbea810>
+cursor = <sqlite3.Cursor object at 0x7f9cdbfaa340>
+fn = <function ConnectionEvents._listen.<locals>.wrap_before_cursor_execute at 0x7f9cdc0c0f40>
+evt_handled = False
+    def _execute_context(
+        self,
+        dialect,
+        constructor,
+        statement,
+        parameters,
+        execution_options,
+        *args,
+        **kw
+    ):
+        """Create an :class:`.ExecutionContext` and execute, returning
+        a :class:`_engine.CursorResult`."""
+    
+        branched = self
+        if self.__branch_from:
+            # if this is a "branched" connection, do everything in terms
+            # of the "root" connection, *except* for .close(), which is
+            # the only feature that branching provides
+            self = self.__branch_from
+    
+        if execution_options:
+            yp = execution_options.get("yield_per", None)
+            if yp:
+                execution_options = execution_options.union(
+                    {"stream_results": True, "max_row_buffer": yp}
+                )
+    
+        try:
+            conn = self._dbapi_connection
+            if conn is None:
+                conn = self._revalidate_connection()
+    
+            context = constructor(
+                dialect, self, conn, execution_options, *args, **kw
+            )
+        except (exc.PendingRollbackError, exc.ResourceClosedError):
+            raise
+        except BaseException as e:
+            self._handle_dbapi_exception(
+                e, util.text_type(statement), parameters, None, None
+            )
+    
+        if (
+            self._transaction
+            and not self._transaction.is_active
+            or (
+                self._nested_transaction
+                and not self._nested_transaction.is_active
+            )
+        ):
+            self._invalid_transaction()
+    
+        elif self._trans_context_manager:
+            TransactionalContext._trans_ctx_check(self)
+    
+        if self._is_future and self._transaction is None:
+            self._autobegin()
+    
+        context.pre_exec()
+    
+        if dialect.use_setinputsizes:
+            context._set_input_sizes()
+    
+        cursor, statement, parameters = (
+            context.cursor,
+            context.statement,
+            context.parameters,
+        )
+    
+        if not context.executemany:
+            parameters = parameters[0]
+    
+        if self._has_events or self.engine._has_events:
+            for fn in self.dispatch.before_cursor_execute:
+                statement, parameters = fn(
+                    self,
+                    cursor,
+                    statement,
+                    parameters,
+                    context,
+                    context.executemany,
+                )
+    
+        if self._echo:
+    
+            self._log_info(statement)
+    
+            stats = context._get_cache_stats()
+    
+            if not self.engine.hide_parameters:
+                self._log_info(
+                    "[%s] %r",
+                    stats,
+                    sql_util._repr_params(
+                        parameters, batches=10, ismulti=context.executemany
+                    ),
+                )
+            else:
+                self._log_info(
+                    "[%s] [SQL parameters hidden due to hide_parameters=True]"
+                    % (stats,)
+                )
+    
+        evt_handled = False
+        try:
+            if context.executemany:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_executemany:
+                        if fn(cursor, statement, parameters, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_executemany(
+                        cursor, statement, parameters, context
+                    )
+            elif not parameters and context.no_parameters:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute_no_params:
+                        if fn(cursor, statement, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_execute_no_params(
+                        cursor, statement, context
+                    )
+            else:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute:
+                        if fn(cursor, statement, parameters, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+>                   self.dialect.do_execute(
+                        cursor, statement, parameters, context
+                    )
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1900: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+self = <sqlalchemy.dialects.sqlite.pysqlite.SQLiteDialect_pysqlite object at 0x7f9cdbf43750>
+cursor = <sqlite3.Cursor object at 0x7f9cdbfaa340>
+statement = 'INSERT INTO user (username, password) VALUES (?, ?)'
+parameters = ('testuser', '$2b$12$ewF8sn0XHgoT0366ey6yv.57jQvv7urNFnuSHmWkRTCd3Gbb9.zn.')
+context = <sqlalchemy.dialects.sqlite.base.SQLiteExecutionContext object at 0x7f9cdbbea810>
+    def do_execute(self, cursor, statement, parameters, context=None):
+>       cursor.execute(statement, parameters)
+E       sqlite3.IntegrityError: UNIQUE constraint failed: user.username
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py:736: IntegrityError
+The above exception was the direct cause of the following exception:
+client = <FlaskClient <Flask 'todo_project'>>
+    def test_update_task(client):
+        hashed_password = bcrypt.generate_password_hash('password').decode('utf-8')
+        user = User(username='testuser', password=hashed_password)
+        db.session.add(user)
+>       db.session.commit()
+tests/test_routes.py:86: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+<string>:2: in commit
+    ???
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1451: in commit
+    self._transaction.commit(_to_root=self.future)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:829: in commit
+    self._prepare_impl()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:808: in _prepare_impl
+    self.session.flush()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:3444: in flush
+    self._flush(objects)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:3583: in _flush
+    with util.safe_reraise():
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:70: in __exit__
+    compat.raise_(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/compat.py:211: in raise_
+    raise exception
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:3544: in _flush
+    flush_context.execute()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:456: in execute
+    rec.execute(self)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:630: in execute
+    util.preloaded.orm_persistence.save_obj(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:245: in save_obj
+    _emit_insert_statements(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1238: in _emit_insert_statements
+    result = connection._execute_20(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1705: in _execute_20
+    return meth(self, args_10style, kwargs_10style, execution_options)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:334: in _execute_on_connection
+    return connection._execute_clauseelement(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1572: in _execute_clauseelement
+    ret = self._execute_context(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1943: in _execute_context
+    self._handle_dbapi_exception(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2124: in _handle_dbapi_exception
+    util.raise_(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/compat.py:211: in raise_
+    raise exception
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1900: in _execute_context
+    self.dialect.do_execute(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+self = <sqlalchemy.dialects.sqlite.pysqlite.SQLiteDialect_pysqlite object at 0x7f9cdbf43750>
+cursor = <sqlite3.Cursor object at 0x7f9cdbfaa340>
+statement = 'INSERT INTO user (username, password) VALUES (?, ?)'
+parameters = ('testuser', '$2b$12$ewF8sn0XHgoT0366ey6yv.57jQvv7urNFnuSHmWkRTCd3Gbb9.zn.')
+context = <sqlalchemy.dialects.sqlite.base.SQLiteExecutionContext object at 0x7f9cdbbea810>
+    def do_execute(self, cursor, statement, parameters, context=None):
+>       cursor.execute(statement, parameters)
+E       sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) UNIQUE constraint failed: user.username
+E       [SQL: INSERT INTO user (username, password) VALUES (?, ?)]
+E       [parameters: ('testuser', '$2b$12$ewF8sn0XHgoT0366ey6yv.57jQvv7urNFnuSHmWkRTCd3Gbb9.zn.')]
+E       (Background on this error at: https://sqlalche.me/e/14/gkpj)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py:736: IntegrityError
+
+
+
+
+
+_____ test_delete_task _____
+self = <sqlalchemy.engine.base.Connection object at 0x7f9cdbfeb310>
+dialect = <sqlalchemy.dialects.sqlite.pysqlite.SQLiteDialect_pysqlite object at 0x7f9cdbf43750>
+constructor = <bound method DefaultExecutionContext._init_compiled of <class 'sqlalchemy.dialects.sqlite.base.SQLiteExecutionContext'>>
+statement = 'INSERT INTO user (username, password) VALUES (?, ?)'
+parameters = ('testuser', '$2b$12$mKwaIrrUdjbEYNK6BufICufRQJ75OoWaoEeioa13FNTNgdPJ7oJUa')
+execution_options = immutabledict({'autocommit': True, 'compiled_cache': {(<sqlalchemy.dialects.sqlite.pysqlite.SQLiteDialect_pysqlite obj...password', 'username'), False, False), <sqlalchemy.dialects.sqlite.base.SQLiteCompiler object at 0x7f9cdc0b9990>, 9]}})
+args = (<sqlalchemy.dialects.sqlite.base.SQLiteCompiler object at 0x7f9cdc0b9990>, [{'password': '$2b$12$mKwaIrrUdjbEYNK6BufICufRQJ75OoWaoEeioa13FNTNgdPJ7oJUa', 'username': 'testuser'}], <sqlalchemy.sql.dml.Insert object at 0x7f9cdc0b8ed0>, [])
+kw = {'cache_hit': symbol('CACHE_HIT')}
+branched = <sqlalchemy.engine.base.Connection object at 0x7f9cdbfeb310>
+yp = None
+conn = <sqlalchemy.pool.base._ConnectionFairy object at 0x7f9cdbfeac10>
+context = <sqlalchemy.dialects.sqlite.base.SQLiteExecutionContext object at 0x7f9cdbfea550>
+cursor = <sqlite3.Cursor object at 0x7f9cdaf5d540>
+fn = <function ConnectionEvents._listen.<locals>.wrap_before_cursor_execute at 0x7f9cdc0c0f40>
+evt_handled = False
+    def _execute_context(
+        self,
+        dialect,
+        constructor,
+        statement,
+        parameters,
+        execution_options,
+        *args,
+        **kw
+    ):
+        """Create an :class:`.ExecutionContext` and execute, returning
+        a :class:`_engine.CursorResult`."""
+    
+        branched = self
+        if self.__branch_from:
+            # if this is a "branched" connection, do everything in terms
+            # of the "root" connection, *except* for .close(), which is
+            # the only feature that branching provides
+            self = self.__branch_from
+    
+        if execution_options:
+            yp = execution_options.get("yield_per", None)
+            if yp:
+                execution_options = execution_options.union(
+                    {"stream_results": True, "max_row_buffer": yp}
+                )
+    
+        try:
+            conn = self._dbapi_connection
+            if conn is None:
+                conn = self._revalidate_connection()
+    
+            context = constructor(
+                dialect, self, conn, execution_options, *args, **kw
+            )
+        except (exc.PendingRollbackError, exc.ResourceClosedError):
+            raise
+        except BaseException as e:
+            self._handle_dbapi_exception(
+                e, util.text_type(statement), parameters, None, None
+            )
+    
+        if (
+            self._transaction
+            and not self._transaction.is_active
+            or (
+                self._nested_transaction
+                and not self._nested_transaction.is_active
+            )
+        ):
+            self._invalid_transaction()
+    
+        elif self._trans_context_manager:
+            TransactionalContext._trans_ctx_check(self)
+    
+        if self._is_future and self._transaction is None:
+            self._autobegin()
+    
+        context.pre_exec()
+    
+        if dialect.use_setinputsizes:
+            context._set_input_sizes()
+    
+        cursor, statement, parameters = (
+            context.cursor,
+            context.statement,
+            context.parameters,
+        )
+    
+        if not context.executemany:
+            parameters = parameters[0]
+    
+        if self._has_events or self.engine._has_events:
+            for fn in self.dispatch.before_cursor_execute:
+                statement, parameters = fn(
+                    self,
+                    cursor,
+                    statement,
+                    parameters,
+                    context,
+                    context.executemany,
+                )
+    
+        if self._echo:
+    
+            self._log_info(statement)
+    
+            stats = context._get_cache_stats()
+    
+            if not self.engine.hide_parameters:
+                self._log_info(
+                    "[%s] %r",
+                    stats,
+                    sql_util._repr_params(
+                        parameters, batches=10, ismulti=context.executemany
+                    ),
+                )
+            else:
+                self._log_info(
+                    "[%s] [SQL parameters hidden due to hide_parameters=True]"
+                    % (stats,)
+                )
+    
+        evt_handled = False
+        try:
+            if context.executemany:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_executemany:
+                        if fn(cursor, statement, parameters, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_executemany(
+                        cursor, statement, parameters, context
+                    )
+            elif not parameters and context.no_parameters:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute_no_params:
+                        if fn(cursor, statement, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_execute_no_params(
+                        cursor, statement, context
+                    )
+            else:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute:
+                        if fn(cursor, statement, parameters, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+>                   self.dialect.do_execute(
+                        cursor, statement, parameters, context
+                    )
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1900: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+self = <sqlalchemy.dialects.sqlite.pysqlite.SQLiteDialect_pysqlite object at 0x7f9cdbf43750>
+cursor = <sqlite3.Cursor object at 0x7f9cdaf5d540>
+statement = 'INSERT INTO user (username, password) VALUES (?, ?)'
+parameters = ('testuser', '$2b$12$mKwaIrrUdjbEYNK6BufICufRQJ75OoWaoEeioa13FNTNgdPJ7oJUa')
+context = <sqlalchemy.dialects.sqlite.base.SQLiteExecutionContext object at 0x7f9cdbfea550>
+    def do_execute(self, cursor, statement, parameters, context=None):
+>       cursor.execute(statement, parameters)
+E       sqlite3.IntegrityError: UNIQUE constraint failed: user.username
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py:736: IntegrityError
+The above exception was the direct cause of the following exception:
+client = <FlaskClient <Flask 'todo_project'>>
+    def test_delete_task(client):
+        hashed_password = bcrypt.generate_password_hash('password').decode('utf-8')
+        user = User(username='testuser', password=hashed_password)
+        db.session.add(user)
+>       db.session.commit()
+tests/test_routes.py:110: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+<string>:2: in commit
+    ???
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1451: in commit
+    self._transaction.commit(_to_root=self.future)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:829: in commit
+    self._prepare_impl()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:808: in _prepare_impl
+    self.session.flush()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:3444: in flush
+    self._flush(objects)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:3583: in _flush
+    with util.safe_reraise():
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:70: in __exit__
+    compat.raise_(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/compat.py:211: in raise_
+    raise exception
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:3544: in _flush
+    flush_context.execute()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:456: in execute
+    rec.execute(self)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:630: in execute
+    util.preloaded.orm_persistence.save_obj(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:245: in save_obj
+    _emit_insert_statements(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1238: in _emit_insert_statements
+    result = connection._execute_20(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1705: in _execute_20
+    return meth(self, args_10style, kwargs_10style, execution_options)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:334: in _execute_on_connection
+    return connection._execute_clauseelement(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1572: in _execute_clauseelement
+    ret = self._execute_context(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1943: in _execute_context
+    self._handle_dbapi_exception(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2124: in _handle_dbapi_exception
+    util.raise_(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/compat.py:211: in raise_
+    raise exception
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1900: in _execute_context
+    self.dialect.do_execute(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+self = <sqlalchemy.dialects.sqlite.pysqlite.SQLiteDialect_pysqlite object at 0x7f9cdbf43750>
+cursor = <sqlite3.Cursor object at 0x7f9cdaf5d540>
+statement = 'INSERT INTO user (username, password) VALUES (?, ?)'
+parameters = ('testuser', '$2b$12$mKwaIrrUdjbEYNK6BufICufRQJ75OoWaoEeioa13FNTNgdPJ7oJUa')
+context = <sqlalchemy.dialects.sqlite.base.SQLiteExecutionContext object at 0x7f9cdbfea550>
+    def do_execute(self, cursor, statement, parameters, context=None):
+>       cursor.execute(statement, parameters)
+E       sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) UNIQUE constraint failed: user.username
+E       [SQL: INSERT INTO user (username, password) VALUES (?, ?)]
+E       [parameters: ('testuser', '$2b$12$mKwaIrrUdjbEYNK6BufICufRQJ75OoWaoEeioa13FNTNgdPJ7oJUa')]
+E       (Background on this error at: https://sqlalche.me/e/14/gkpj)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py:736: IntegrityError
+
+
+
+
+
+_____ test_account _____
+self = <sqlalchemy.engine.base.Connection object at 0x7f9cdb39f210>
+dialect = <sqlalchemy.dialects.sqlite.pysqlite.SQLiteDialect_pysqlite object at 0x7f9cdbf43750>
+constructor = <bound method DefaultExecutionContext._init_compiled of <class 'sqlalchemy.dialects.sqlite.base.SQLiteExecutionContext'>>
+statement = 'INSERT INTO user (username, password) VALUES (?, ?)'
+parameters = ('testuser', '$2b$12$TBJmA89V.GxeMlq.U1NHSOhyApnLRuDGxiqGxYRQqGZJPdcIK.XnK')
+execution_options = immutabledict({'autocommit': True, 'compiled_cache': {(<sqlalchemy.dialects.sqlite.pysqlite.SQLiteDialect_pysqlite obj...assword', 'username'), False, False), <sqlalchemy.dialects.sqlite.base.SQLiteCompiler object at 0x7f9cdc0b9990>, 10]}})
+args = (<sqlalchemy.dialects.sqlite.base.SQLiteCompiler object at 0x7f9cdc0b9990>, [{'password': '$2b$12$TBJmA89V.GxeMlq.U1NHSOhyApnLRuDGxiqGxYRQqGZJPdcIK.XnK', 'username': 'testuser'}], <sqlalchemy.sql.dml.Insert object at 0x7f9cdc0b8ed0>, [])
+kw = {'cache_hit': symbol('CACHE_HIT')}
+branched = <sqlalchemy.engine.base.Connection object at 0x7f9cdb39f210>
+yp = None
+conn = <sqlalchemy.pool.base._ConnectionFairy object at 0x7f9cdb39f190>
+context = <sqlalchemy.dialects.sqlite.base.SQLiteExecutionContext object at 0x7f9cdb39f4d0>
+cursor = <sqlite3.Cursor object at 0x7f9cdbe65ec0>
+fn = <function ConnectionEvents._listen.<locals>.wrap_before_cursor_execute at 0x7f9cdc0c0f40>
+evt_handled = False
+    def _execute_context(
+        self,
+        dialect,
+        constructor,
+        statement,
+        parameters,
+        execution_options,
+        *args,
+        **kw
+    ):
+        """Create an :class:`.ExecutionContext` and execute, returning
+        a :class:`_engine.CursorResult`."""
+    
+        branched = self
+        if self.__branch_from:
+            # if this is a "branched" connection, do everything in terms
+            # of the "root" connection, *except* for .close(), which is
+            # the only feature that branching provides
+            self = self.__branch_from
+    
+        if execution_options:
+            yp = execution_options.get("yield_per", None)
+            if yp:
+                execution_options = execution_options.union(
+                    {"stream_results": True, "max_row_buffer": yp}
+                )
+    
+        try:
+            conn = self._dbapi_connection
+            if conn is None:
+                conn = self._revalidate_connection()
+    
+            context = constructor(
+                dialect, self, conn, execution_options, *args, **kw
+            )
+        except (exc.PendingRollbackError, exc.ResourceClosedError):
+            raise
+        except BaseException as e:
+            self._handle_dbapi_exception(
+                e, util.text_type(statement), parameters, None, None
+            )
+    
+        if (
+            self._transaction
+            and not self._transaction.is_active
+            or (
+                self._nested_transaction
+                and not self._nested_transaction.is_active
+            )
+        ):
+            self._invalid_transaction()
+    
+        elif self._trans_context_manager:
+            TransactionalContext._trans_ctx_check(self)
+    
+        if self._is_future and self._transaction is None:
+            self._autobegin()
+    
+        context.pre_exec()
+    
+        if dialect.use_setinputsizes:
+            context._set_input_sizes()
+    
+        cursor, statement, parameters = (
+            context.cursor,
+            context.statement,
+            context.parameters,
+        )
+    
+        if not context.executemany:
+            parameters = parameters[0]
+    
+        if self._has_events or self.engine._has_events:
+            for fn in self.dispatch.before_cursor_execute:
+                statement, parameters = fn(
+                    self,
+                    cursor,
+                    statement,
+                    parameters,
+                    context,
+                    context.executemany,
+                )
+    
+        if self._echo:
+    
+            self._log_info(statement)
+    
+            stats = context._get_cache_stats()
+    
+            if not self.engine.hide_parameters:
+                self._log_info(
+                    "[%s] %r",
+                    stats,
+                    sql_util._repr_params(
+                        parameters, batches=10, ismulti=context.executemany
+                    ),
+                )
+            else:
+                self._log_info(
+                    "[%s] [SQL parameters hidden due to hide_parameters=True]"
+                    % (stats,)
+                )
+    
+        evt_handled = False
+        try:
+            if context.executemany:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_executemany:
+                        if fn(cursor, statement, parameters, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_executemany(
+                        cursor, statement, parameters, context
+                    )
+            elif not parameters and context.no_parameters:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute_no_params:
+                        if fn(cursor, statement, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_execute_no_params(
+                        cursor, statement, context
+                    )
+            else:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute:
+                        if fn(cursor, statement, parameters, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+>                   self.dialect.do_execute(
+                        cursor, statement, parameters, context
+                    )
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1900: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+self = <sqlalchemy.dialects.sqlite.pysqlite.SQLiteDialect_pysqlite object at 0x7f9cdbf43750>
+cursor = <sqlite3.Cursor object at 0x7f9cdbe65ec0>
+statement = 'INSERT INTO user (username, password) VALUES (?, ?)'
+parameters = ('testuser', '$2b$12$TBJmA89V.GxeMlq.U1NHSOhyApnLRuDGxiqGxYRQqGZJPdcIK.XnK')
+context = <sqlalchemy.dialects.sqlite.base.SQLiteExecutionContext object at 0x7f9cdb39f4d0>
+    def do_execute(self, cursor, statement, parameters, context=None):
+>       cursor.execute(statement, parameters)
+E       sqlite3.IntegrityError: UNIQUE constraint failed: user.username
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py:736: IntegrityError
+The above exception was the direct cause of the following exception:
+client = <FlaskClient <Flask 'todo_project'>>
+    def test_account(client):
+        hashed_password = bcrypt.generate_password_hash('password').decode('utf-8')
+        user = User(username='testuser', password=hashed_password)
+        db.session.add(user)
+>       db.session.commit()
+tests/test_routes.py:132: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+<string>:2: in commit
+    ???
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1451: in commit
+    self._transaction.commit(_to_root=self.future)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:829: in commit
+    self._prepare_impl()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:808: in _prepare_impl
+    self.session.flush()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:3444: in flush
+    self._flush(objects)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:3583: in _flush
+    with util.safe_reraise():
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:70: in __exit__
+    compat.raise_(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/compat.py:211: in raise_
+    raise exception
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:3544: in _flush
+    flush_context.execute()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:456: in execute
+    rec.execute(self)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:630: in execute
+    util.preloaded.orm_persistence.save_obj(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:245: in save_obj
+    _emit_insert_statements(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1238: in _emit_insert_statements
+    result = connection._execute_20(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1705: in _execute_20
+    return meth(self, args_10style, kwargs_10style, execution_options)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:334: in _execute_on_connection
+    return connection._execute_clauseelement(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1572: in _execute_clauseelement
+    ret = self._execute_context(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1943: in _execute_context
+    self._handle_dbapi_exception(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2124: in _handle_dbapi_exception
+    util.raise_(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/compat.py:211: in raise_
+    raise exception
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1900: in _execute_context
+    self.dialect.do_execute(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+self = <sqlalchemy.dialects.sqlite.pysqlite.SQLiteDialect_pysqlite object at 0x7f9cdbf43750>
+cursor = <sqlite3.Cursor object at 0x7f9cdbe65ec0>
+statement = 'INSERT INTO user (username, password) VALUES (?, ?)'
+parameters = ('testuser', '$2b$12$TBJmA89V.GxeMlq.U1NHSOhyApnLRuDGxiqGxYRQqGZJPdcIK.XnK')
+context = <sqlalchemy.dialects.sqlite.base.SQLiteExecutionContext object at 0x7f9cdb39f4d0>
+    def do_execute(self, cursor, statement, parameters, context=None):
+>       cursor.execute(statement, parameters)
+E       sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) UNIQUE constraint failed: user.username
+E       [SQL: INSERT INTO user (username, password) VALUES (?, ?)]
+E       [parameters: ('testuser', '$2b$12$TBJmA89V.GxeMlq.U1NHSOhyApnLRuDGxiqGxYRQqGZJPdcIK.XnK')]
+E       (Background on this error at: https://sqlalche.me/e/14/gkpj)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py:736: IntegrityError
+
+
+
+
+_____ test_change_password _____
+self = <sqlalchemy.engine.base.Connection object at 0x7f9cdb316590>
+dialect = <sqlalchemy.dialects.sqlite.pysqlite.SQLiteDialect_pysqlite object at 0x7f9cdbf43750>
+constructor = <bound method DefaultExecutionContext._init_compiled of <class 'sqlalchemy.dialects.sqlite.base.SQLiteExecutionContext'>>
+statement = 'INSERT INTO user (username, password) VALUES (?, ?)'
+parameters = ('testuser', '$2b$12$uq3gPI2ik8qkACGN8vbaGueWChr2sWS.lwJzrCU1E3P0jNAlahgNG')
+execution_options = immutabledict({'autocommit': True, 'compiled_cache': {(<sqlalchemy.dialects.sqlite.pysqlite.SQLiteDialect_pysqlite obj...assword', 'username'), False, False), <sqlalchemy.dialects.sqlite.base.SQLiteCompiler object at 0x7f9cdc0b9990>, 11]}})
+args = (<sqlalchemy.dialects.sqlite.base.SQLiteCompiler object at 0x7f9cdc0b9990>, [{'password': '$2b$12$uq3gPI2ik8qkACGN8vbaGueWChr2sWS.lwJzrCU1E3P0jNAlahgNG', 'username': 'testuser'}], <sqlalchemy.sql.dml.Insert object at 0x7f9cdc0b8ed0>, [])
+kw = {'cache_hit': symbol('CACHE_HIT')}
+branched = <sqlalchemy.engine.base.Connection object at 0x7f9cdb316590>
+yp = None
+conn = <sqlalchemy.pool.base._ConnectionFairy object at 0x7f9cdb316510>
+context = <sqlalchemy.dialects.sqlite.base.SQLiteExecutionContext object at 0x7f9cdb316850>
+cursor = <sqlite3.Cursor object at 0x7f9cdb5b3f40>
+fn = <function ConnectionEvents._listen.<locals>.wrap_before_cursor_execute at 0x7f9cdc0c0f40>
+evt_handled = False
+    def _execute_context(
+        self,
+        dialect,
+        constructor,
+        statement,
+        parameters,
+        execution_options,
+        *args,
+        **kw
+    ):
+        """Create an :class:`.ExecutionContext` and execute, returning
+        a :class:`_engine.CursorResult`."""
+    
+        branched = self
+        if self.__branch_from:
+            # if this is a "branched" connection, do everything in terms
+            # of the "root" connection, *except* for .close(), which is
+            # the only feature that branching provides
+            self = self.__branch_from
+    
+        if execution_options:
+            yp = execution_options.get("yield_per", None)
+            if yp:
+                execution_options = execution_options.union(
+                    {"stream_results": True, "max_row_buffer": yp}
+                )
+    
+        try:
+            conn = self._dbapi_connection
+            if conn is None:
+                conn = self._revalidate_connection()
+    
+            context = constructor(
+                dialect, self, conn, execution_options, *args, **kw
+            )
+        except (exc.PendingRollbackError, exc.ResourceClosedError):
+            raise
+        except BaseException as e:
+            self._handle_dbapi_exception(
+                e, util.text_type(statement), parameters, None, None
+            )
+    
+        if (
+            self._transaction
+            and not self._transaction.is_active
+            or (
+                self._nested_transaction
+                and not self._nested_transaction.is_active
+            )
+        ):
+            self._invalid_transaction()
+    
+        elif self._trans_context_manager:
+            TransactionalContext._trans_ctx_check(self)
+    
+        if self._is_future and self._transaction is None:
+            self._autobegin()
+    
+        context.pre_exec()
+    
+        if dialect.use_setinputsizes:
+            context._set_input_sizes()
+    
+        cursor, statement, parameters = (
+            context.cursor,
+            context.statement,
+            context.parameters,
+        )
+    
+        if not context.executemany:
+            parameters = parameters[0]
+    
+        if self._has_events or self.engine._has_events:
+            for fn in self.dispatch.before_cursor_execute:
+                statement, parameters = fn(
+                    self,
+                    cursor,
+                    statement,
+                    parameters,
+                    context,
+                    context.executemany,
+                )
+    
+        if self._echo:
+    
+            self._log_info(statement)
+    
+            stats = context._get_cache_stats()
+    
+            if not self.engine.hide_parameters:
+                self._log_info(
+                    "[%s] %r",
+                    stats,
+                    sql_util._repr_params(
+                        parameters, batches=10, ismulti=context.executemany
+                    ),
+                )
+            else:
+                self._log_info(
+                    "[%s] [SQL parameters hidden due to hide_parameters=True]"
+                    % (stats,)
+                )
+    
+        evt_handled = False
+        try:
+            if context.executemany:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_executemany:
+                        if fn(cursor, statement, parameters, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_executemany(
+                        cursor, statement, parameters, context
+                    )
+            elif not parameters and context.no_parameters:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute_no_params:
+                        if fn(cursor, statement, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_execute_no_params(
+                        cursor, statement, context
+                    )
+            else:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute:
+                        if fn(cursor, statement, parameters, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+>                   self.dialect.do_execute(
+                        cursor, statement, parameters, context
+                    )
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1900: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+self = <sqlalchemy.dialects.sqlite.pysqlite.SQLiteDialect_pysqlite object at 0x7f9cdbf43750>
+cursor = <sqlite3.Cursor object at 0x7f9cdb5b3f40>
+statement = 'INSERT INTO user (username, password) VALUES (?, ?)'
+parameters = ('testuser', '$2b$12$uq3gPI2ik8qkACGN8vbaGueWChr2sWS.lwJzrCU1E3P0jNAlahgNG')
+context = <sqlalchemy.dialects.sqlite.base.SQLiteExecutionContext object at 0x7f9cdb316850>
+    def do_execute(self, cursor, statement, parameters, context=None):
+>       cursor.execute(statement, parameters)
+E       sqlite3.IntegrityError: UNIQUE constraint failed: user.username
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py:736: IntegrityError
+The above exception was the direct cause of the following exception:
+client = <FlaskClient <Flask 'todo_project'>>
+    def test_change_password(client):
+        hashed_password = bcrypt.generate_password_hash('password').decode('utf-8')
+        user = User(username='testuser', password=hashed_password)
+        db.session.add(user)
+>       db.session.commit()
+tests/test_routes.py:147: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+<string>:2: in commit
+    ???
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1451: in commit
+    self._transaction.commit(_to_root=self.future)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:829: in commit
+    self._prepare_impl()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:808: in _prepare_impl
+    self.session.flush()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:3444: in flush
+    self._flush(objects)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:3583: in _flush
+    with util.safe_reraise():
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:70: in __exit__
+    compat.raise_(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/compat.py:211: in raise_
+    raise exception
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:3544: in _flush
+    flush_context.execute()
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:456: in execute
+    rec.execute(self)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:630: in execute
+    util.preloaded.orm_persistence.save_obj(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:245: in save_obj
+    _emit_insert_statements(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1238: in _emit_insert_statements
+    result = connection._execute_20(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1705: in _execute_20
+    return meth(self, args_10style, kwargs_10style, execution_options)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:334: in _execute_on_connection
+    return connection._execute_clauseelement(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1572: in _execute_clauseelement
+    ret = self._execute_context(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1943: in _execute_context
+    self._handle_dbapi_exception(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2124: in _handle_dbapi_exception
+    util.raise_(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/compat.py:211: in raise_
+    raise exception
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1900: in _execute_context
+    self.dialect.do_execute(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+self = <sqlalchemy.dialects.sqlite.pysqlite.SQLiteDialect_pysqlite object at 0x7f9cdbf43750>
+cursor = <sqlite3.Cursor object at 0x7f9cdb5b3f40>
+statement = 'INSERT INTO user (username, password) VALUES (?, ?)'
+parameters = ('testuser', '$2b$12$uq3gPI2ik8qkACGN8vbaGueWChr2sWS.lwJzrCU1E3P0jNAlahgNG')
+context = <sqlalchemy.dialects.sqlite.base.SQLiteExecutionContext object at 0x7f9cdb316850>
+    def do_execute(self, cursor, statement, parameters, context=None):
+>       cursor.execute(statement, parameters)
+E       sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) UNIQUE constraint failed: user.username
+E       [SQL: INSERT INTO user (username, password) VALUES (?, ?)]
+E       [parameters: ('testuser', '$2b$12$uq3gPI2ik8qkACGN8vbaGueWChr2sWS.lwJzrCU1E3P0jNAlahgNG')]
+E       (Background on this error at: https://sqlalche.me/e/14/gkpj)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py:736: IntegrityError
