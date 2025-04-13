@@ -4,7 +4,6 @@ variables:
   COMPOSE_HTTP_TIMEOUT: 600
   DOCKER_BUILDKIT: 0
   COMPOSE_DOCKER_CLI_BUILD: 0
-  PROJECT_DIR: "/home/aluno/Gestao-Tarefas"
 
 stages:
   - build
@@ -25,13 +24,13 @@ test_job:
   image: python:3.11
   before_script:
     - apt-get update && apt-get install -y --no-install-recommends gcc python3-dev
-    - pip install -r $PROJECT_DIR/requirements.txt pytest pytest-cov
+    - pip install -r $CI_PROJECT_DIR/requirements.txt pytest pytest-cov
   script:
-    - cd $PROJECT_DIR
-    - pytest --cov=./ --cov-report=xml -v $PROJECT_DIR/tests/
+    - cd $CI_PROJECT_DIR
+    - pytest --cov=./ --cov-report=xml -v $CI_PROJECT_DIR/tests/
   artifacts:
     paths:
-      - $PROJECT_DIR/coverage.xml
+      - $CI_PROJECT_DIR/coverage.xml
     expire_in: 1 week
 
 deploy_job:
