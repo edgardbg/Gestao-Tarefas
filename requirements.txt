@@ -7,3 +7,4 @@ flask-wtf==1.2.1
 SQLAlchemy==1.4.46
 pytest
 pytest-cov
+coverage

@@ -1,4 +1,5 @@
 import os
+import coverage
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
@@ -16,5 +17,11 @@ login_manager.login_message_category = 'danger'
 
 bcrypt = Bcrypt(app)
 
+cov = coverage.Coverage()
+cov.start()
+
 # Always put Routes at end
 from todo_project import routes
+
+cov.stop()
+cov.save()
