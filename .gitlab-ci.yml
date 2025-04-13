@@ -80,6 +80,15 @@ review_job:
   image: docker:20.10.16
   services:
     - docker:20.10.16-dind
+  before_script:
+    - echo "Checking and freeing port 8082"
+    - PORT_CONTAINERS=$(docker ps --filter "publish=8082" -q)
+    - echo $PORT_CONTAINERS
+    - if [ -n "$PORT_CONTAINERS" ]; then
+        docker stop $PORT_CONTAINERS;
+        docker rm $PORT_CONTAINERS;
+        sleep 5;
+      fi
   script:
     - echo "Creating temporary review environment"
     - docker run -d -p 8082:8080 ex-build-dev:latest
@@ -89,6 +98,15 @@ deploy_stage:
   image: docker:20.10.16
   services:
     - docker:20.10.16-dind
+  before_script:
+    - echo "Checking and freeing port 8080"
+    - PORT_CONTAINERS=$(docker ps --filter "publish=8080" -q)
+    - echo $PORT_CONTAINERS
+    - if [ -n "$PORT_CONTAINERS" ]; then
+        docker stop $PORT_CONTAINERS;
+        docker rm $PORT_CONTAINERS;
+        sleep 5;
+      fi
   script:
     - echo "Deploying the app to stage"
     - docker run -d -p 8080:8080 ex-build-dev:latest
