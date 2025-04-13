@@ -18,7 +18,7 @@ def setup():
 
 def test_registration_form(setup):
     with app.test_request_context():
-        form = RegistrationForm(username='testuser', password='password', confirm_password='password')
+        form = RegistrationForm(username='uniqueuser', password='password', confirm_password='password')
         assert form.validate() is True
 
 def test_login_form():
