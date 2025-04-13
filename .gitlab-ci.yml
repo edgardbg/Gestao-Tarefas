@@ -1,0 +1,52 @@
+variables:
+  DOCKER_TLS_CERTDIR: "/certs"
+  DOCKER_CLIENT_TIMEOUT: 600
+  COMPOSE_HTTP_TIMEOUT: 600
+  DOCKER_BUILDKIT: 0
+  COMPOSE_DOCKER_CLI_BUILD: 0
+
+stages:
+  - build
+  - test
+  - deploy
+  - notify
+
+build_job:
+   stage: build
+   image: docker:20.10.16
+   services:
+       - docker:20.10.16-dind
+   script:
+       - docker build -t ex-build-dev:latest .
+
+test_job:
+  stage: test
+  image: python:3.11
+  before_script:
+    - apt-get update && apt-get install -y --no-install-recommends gcc python3-dev
+    - pip install -r $PROJECT_DIR/requirements.txt pytest pytest-cov
+  script:
+    - cd $PROJECT_DIR
+    - pytest --cov=./ --cov-report=xml -v $PROJECT_DIR/tests/
+  artifacts:
+    paths:
+      - $PROJECT_DIR/coverage.xml
+    expire_in: 1 week
+
+deploy_job:
+  stage: deploy
+  image: docker:20.10.16
+  services:
+    - docker:20.10.16-dind
+  before_script:
+    - echo "Remove anterior"
+    - PORT_CONTAINERS=$(docker ps --filter "publish=8081" -q)
+    - echo $PORT_CONTAINERS
+    - if [ -n "$PORT_CONTAINERS" ]; then
+        docker stop $PORT_CONTAINERS;
+        docker rm $PORT_CONTAINERS;
+        sleep 5;
+      fi
+  script:
+    - echo "Deploying the app"
+    - docker run -d -p 8081:8080 ex-build-dev:latest
