@@ -34,6 +34,18 @@ test_job:
       - $CI_PROJECT_DIR/coverage.xml
     expire_in: 1 week
 
+sast_job:
+  stage: test
+  image: python:3.11
+  before_script:
+    - pip install bandit
+  script:
+    - bandit -r $CI_PROJECT_DIR/todo_project
+  artifacts:
+    paths:
+      - $CI_PROJECT_DIR/bandit_output.txt
+    expire_in: 1 week
+
 deploy_job:
   stage: deploy
   image: docker:20.10.16
