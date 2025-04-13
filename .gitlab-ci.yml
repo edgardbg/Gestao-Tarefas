@@ -46,6 +46,16 @@ sast_job:
       - $CI_PROJECT_DIR/bandit_output.txt
     expire_in: 1 week
 
+dependency_check_job:
+  stage: test
+  image: owasp/dependency-check
+  script:
+    - dependency-check.sh --project "Gestao-Tarefas" --scan $CI_PROJECT_DIR --format "ALL" --out $CI_PROJECT_DIR/dependency-check-report
+  artifacts:
+    paths:
+      - $CI_PROJECT_DIR/dependency-check-report
+    expire_in: 1 week
+
 deploy_job:
   stage: deploy
   image: docker:20.10.16
