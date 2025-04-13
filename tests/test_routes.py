@@ -3,9 +3,11 @@ from todo_project import app, db, bcrypt
 from todo_project.models import User, Task
 from todo_project.forms import (LoginForm, RegistrationForm, UpdateUserInfoForm, 
                                 UpdateUserPassword, TaskForm, UpdateTaskForm)
+import os
 
 @pytest.fixture
 def client():
+    os.environ['SECRET_KEY'] = 'test_secret_key'
     app.config['TESTING'] = True
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
     with app.test_client() as client:
