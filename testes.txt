@@ -1,245 +1,425 @@
-_______________________________ test_task_model ________________________________
-self = <sqlalchemy.engine.base.Connection object at 0x7f7ad6ea4790>
-dialect = <sqlalchemy.dialects.sqlite.pysqlite.SQLiteDialect_pysqlite object at 0x7f7ad6f0ff90>
-constructor = <bound method DefaultExecutionContext._init_compiled of <class 'sqlalchemy.dialects.sqlite.base.SQLiteExecutionContext'>>
-statement = 'INSERT INTO user (username, password) VALUES (?, ?)'
-parameters = ('testuser', 'password')
-execution_options = immutabledict({'autocommit': True, 'compiled_cache': {(<sqlalchemy.dialects.sqlite.pysqlite.SQLiteDialect_pysqlite obj...password', 'username'), False, False), <sqlalchemy.dialects.sqlite.base.SQLiteCompiler object at 0x7f7ad6e80e50>, 4]}})
-args = (<sqlalchemy.dialects.sqlite.base.SQLiteCompiler object at 0x7f7ad6e80e50>, [{'password': 'password', 'username': 'testuser'}], <sqlalchemy.sql.dml.Insert object at 0x7f7ad6e71990>, [])
-kw = {'cache_hit': symbol('CACHE_HIT')}
-branched = <sqlalchemy.engine.base.Connection object at 0x7f7ad6ea4790>
-yp = None
-conn = <sqlalchemy.pool.base._ConnectionFairy object at 0x7f7ad6ea50d0>
-context = <sqlalchemy.dialects.sqlite.base.SQLiteExecutionContext object at 0x7f7ad6ed2a50>
-cursor = <sqlite3.Cursor object at 0x7f7ad6da8440>
-fn = <function ConnectionEvents._listen.<locals>.wrap_before_cursor_execute at 0x7f7ad6ea1080>
-evt_handled = False
-    def _execute_context(
-        self,
-        dialect,
-        constructor,
-        statement,
-        parameters,
-        execution_options,
-        *args,
-        **kw
-    ):
-        """Create an :class:`.ExecutionContext` and execute, returning
-        a :class:`_engine.CursorResult`."""
-    
-        branched = self
-        if self.__branch_from:
-            # if this is a "branched" connection, do everything in terms
-            # of the "root" connection, *except* for .close(), which is
-            # the only feature that branching provides
-            self = self.__branch_from
-    
-        if execution_options:
-            yp = execution_options.get("yield_per", None)
-            if yp:
-                execution_options = execution_options.union(
-                    {"stream_results": True, "max_row_buffer": yp}
-                )
-    
-        try:
-            conn = self._dbapi_connection
-            if conn is None:
-                conn = self._revalidate_connection()
-    
-            context = constructor(
-                dialect, self, conn, execution_options, *args, **kw
-            )
-        except (exc.PendingRollbackError, exc.ResourceClosedError):
-            raise
-        except BaseException as e:
-            self._handle_dbapi_exception(
-                e, util.text_type(statement), parameters, None, None
-            )
-    
-        if (
-            self._transaction
-            and not self._transaction.is_active
-            or (
-                self._nested_transaction
-                and not self._nested_transaction.is_active
-            )
-        ):
-            self._invalid_transaction()
-    
-        elif self._trans_context_manager:
-            TransactionalContext._trans_ctx_check(self)
-    
-        if self._is_future and self._transaction is None:
-            self._autobegin()
-    
-        context.pre_exec()
-    
-        if dialect.use_setinputsizes:
-            context._set_input_sizes()
-    
-        cursor, statement, parameters = (
-            context.cursor,
-            context.statement,
-            context.parameters,
-        )
-    
-        if not context.executemany:
-            parameters = parameters[0]
-    
-        if self._has_events or self.engine._has_events:
-            for fn in self.dispatch.before_cursor_execute:
-                statement, parameters = fn(
-                    self,
-                    cursor,
-                    statement,
-                    parameters,
-                    context,
-                    context.executemany,
-                )
-    
-        if self._echo:
-    
-            self._log_info(statement)
-    
-            stats = context._get_cache_stats()
-    
-            if not self.engine.hide_parameters:
-                self._log_info(
-                    "[%s] %r",
-                    stats,
-                    sql_util._repr_params(
-                        parameters, batches=10, ismulti=context.executemany
-                    ),
-                )
-            else:
-                self._log_info(
-                    "[%s] [SQL parameters hidden due to hide_parameters=True]"
-                    % (stats,)
-                )
-    
-        evt_handled = False
-        try:
-            if context.executemany:
-                if self.dialect._has_events:
-                    for fn in self.dialect.dispatch.do_executemany:
-                        if fn(cursor, statement, parameters, context):
-                            evt_handled = True
-                            break
-                if not evt_handled:
-                    self.dialect.do_executemany(
-                        cursor, statement, parameters, context
-                    )
-            elif not parameters and context.no_parameters:
-                if self.dialect._has_events:
-                    for fn in self.dialect.dispatch.do_execute_no_params:
-                        if fn(cursor, statement, context):
-                            evt_handled = True
-                            break
-                if not evt_handled:
-                    self.dialect.do_execute_no_params(
-                        cursor, statement, context
-                    )
-            else:
-                if self.dialect._has_events:
-                    for fn in self.dialect.dispatch.do_execute:
-                        if fn(cursor, statement, parameters, context):
-                            evt_handled = True
-                            break
-                if not evt_handled:
->                   self.dialect.do_execute(
-                        cursor, statement, parameters, context
-                    )
-/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1900: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
-self = <sqlalchemy.dialects.sqlite.pysqlite.SQLiteDialect_pysqlite object at 0x7f7ad6f0ff90>
-cursor = <sqlite3.Cursor object at 0x7f7ad6da8440>
-statement = 'INSERT INTO user (username, password) VALUES (?, ?)'
-parameters = ('testuser', 'password')
-context = <sqlalchemy.dialects.sqlite.base.SQLiteExecutionContext object at 0x7f7ad6ed2a50>
-    def do_execute(self, cursor, statement, parameters, context=None):
->       cursor.execute(statement, parameters)
-E       sqlite3.IntegrityError: UNIQUE constraint failed: user.username
-/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py:736: IntegrityError
-The above exception was the direct cause of the following exception:
-setup = None
-    def test_task_model(setup):
-        user = User(username='testuser', password='password')
+__________________________________ test_login __________________________________
+client = <FlaskClient <Flask 'todo_project'>>
+    def test_login(client):
+        hashed_password = bcrypt.generate_password_hash('password').decode('utf-8')
+        user = User(username='testuser', password=hashed_password)
         db.session.add(user)
->       db.session.commit()
-tests/test_models.py:24: 
+        db.session.commit()
+    
+>       response = client.post('/login', data=dict(
+            username='testuser',
+            password='password'
+        ), follow_redirects=True)
+tests/test_routes.py:29: 
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
-<string>:2: in commit
-    ???
-/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1451: in commit
-    self._transaction.commit(_to_root=self.future)
-/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:829: in commit
-    self._prepare_impl()
-/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:808: in _prepare_impl
-    self.session.flush()
-/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:3444: in flush
-    self._flush(objects)
-/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:3583: in _flush
-    with util.safe_reraise():
-/usr/local/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:70: in __exit__
-    compat.raise_(
-/usr/local/lib/python3.11/site-packages/sqlalchemy/util/compat.py:211: in raise_
-    raise exception
-/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py:3544: in _flush
-    flush_context.execute()
-/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:456: in execute
-    rec.execute(self)
-/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:630: in execute
-    util.preloaded.orm_persistence.save_obj(
-/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:245: in save_obj
-    _emit_insert_statements(
-/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1238: in _emit_insert_statements
-    result = connection._execute_20(
-/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1705: in _execute_20
-    return meth(self, args_10style, kwargs_10style, execution_options)
-/usr/local/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:334: in _execute_on_connection
-    return connection._execute_clauseelement(
-/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1572: in _execute_clauseelement
-    ret = self._execute_context(
-/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1943: in _execute_context
-    self._handle_dbapi_exception(
-/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2124: in _handle_dbapi_exception
-    util.raise_(
-/usr/local/lib/python3.11/site-packages/sqlalchemy/util/compat.py:211: in raise_
-    raise exception
-/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1900: in _execute_context
-    self.dialect.do_execute(
+/usr/local/lib/python3.11/site-packages/werkzeug/test.py:1136: in post
+    return self.open(*args, **kw)
+/usr/local/lib/python3.11/site-packages/flask/testing.py:217: in open
+    return super().open(
+/usr/local/lib/python3.11/site-packages/werkzeug/test.py:1076: in open
+    response = self.run_wsgi_app(request.environ, buffered=buffered)
+/usr/local/lib/python3.11/site-packages/werkzeug/test.py:945: in run_wsgi_app
+    rv = run_wsgi_app(self.application, environ, buffered=buffered)
+/usr/local/lib/python3.11/site-packages/werkzeug/test.py:1233: in run_wsgi_app
+    app_rv = app(environ, start_response)
+/usr/local/lib/python3.11/site-packages/flask/app.py:2091: in __call__
+    return self.wsgi_app(environ, start_response)
+/usr/local/lib/python3.11/site-packages/flask/app.py:2076: in wsgi_app
+    response = self.handle_exception(e)
+/usr/local/lib/python3.11/site-packages/flask/app.py:2073: in wsgi_app
+    response = self.full_dispatch_request()
+/usr/local/lib/python3.11/site-packages/flask/app.py:1519: in full_dispatch_request
+    rv = self.handle_user_exception(e)
+/usr/local/lib/python3.11/site-packages/flask/app.py:1517: in full_dispatch_request
+    rv = self.dispatch_request()
+/usr/local/lib/python3.11/site-packages/flask/app.py:1503: in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**req.view_args)
+todo_project/todo_project/routes.py:46: in login
+    login_user(user)
+/usr/local/lib/python3.11/site-packages/flask_login/utils.py:170: in login_user
+    session['_user_id'] = user_id
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
-self = <sqlalchemy.dialects.sqlite.pysqlite.SQLiteDialect_pysqlite object at 0x7f7ad6f0ff90>
-cursor = <sqlite3.Cursor object at 0x7f7ad6da8440>
-statement = 'INSERT INTO user (username, password) VALUES (?, ?)'
-parameters = ('testuser', 'password')
-context = <sqlalchemy.dialects.sqlite.base.SQLiteExecutionContext object at 0x7f7ad6ed2a50>
-    def do_execute(self, cursor, statement, parameters, context=None):
->       cursor.execute(statement, parameters)
-E       sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) UNIQUE constraint failed: user.username
-E       [SQL: INSERT INTO user (username, password) VALUES (?, ?)]
-E       [parameters: ('testuser', 'password')]
-E       (Background on this error at: https://sqlalche.me/e/14/gkpj)
-/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py:736: IntegrityError
+self = <NullSession {}>, args = ('_user_id', '1'), kwargs = {}
+    def _fail(self, *args: t.Any, **kwargs: t.Any) -> "te.NoReturn":
+>       raise RuntimeError(
+            "The session is unavailable because no secret "
+            "key was set.  Set the secret_key on the "
+            "application to something unique and secret."
+        )
+E       RuntimeError: The session is unavailable because no secret key was set.  Set the secret_key on the application to something unique and secret.
+/usr/local/lib/python3.11/site-packages/flask/sessions.py:97: RuntimeError
 
-Descrição dos testes realizados pelo pytest:
 
-1. Teste do modelo de usuário:
-   - Verifica se um usuário pode ser criado e salvo no banco de dados.
-   - Verifica se os atributos do usuário (id, username, password, tasks) são definidos corretamente.
 
-2. Teste do modelo de tarefa:
-   - Verifica se uma tarefa pode ser criada e salva no banco de dados.
-   - Verifica se os atributos da tarefa (id, content, date_posted, user_id, author) são definidos corretamente.
 
-3. Teste das rotas:
-   - Verifica se as rotas da aplicação (about, login, register, add task, view all tasks, update task, delete task, account settings, change password) estão funcionando corretamente.
-   - Verifica se as mensagens de sucesso e erro são exibidas corretamente.
+________________________________ test_register _________________________________
+client = <FlaskClient <Flask 'todo_project'>>
+    def test_register(client):
+>       response = client.post('/register', data=dict(
+            username='newuser',
+            password='password',
+            confirm_password='password'
+        ), follow_redirects=True)
+tests/test_routes.py:38: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.11/site-packages/werkzeug/test.py:1136: in post
+    return self.open(*args, **kw)
+/usr/local/lib/python3.11/site-packages/flask/testing.py:217: in open
+    return super().open(
+/usr/local/lib/python3.11/site-packages/werkzeug/test.py:1076: in open
+    response = self.run_wsgi_app(request.environ, buffered=buffered)
+/usr/local/lib/python3.11/site-packages/werkzeug/test.py:945: in run_wsgi_app
+    rv = run_wsgi_app(self.application, environ, buffered=buffered)
+/usr/local/lib/python3.11/site-packages/werkzeug/test.py:1233: in run_wsgi_app
+    app_rv = app(environ, start_response)
+/usr/local/lib/python3.11/site-packages/flask/app.py:2091: in __call__
+    return self.wsgi_app(environ, start_response)
+/usr/local/lib/python3.11/site-packages/flask/app.py:2076: in wsgi_app
+    response = self.handle_exception(e)
+/usr/local/lib/python3.11/site-packages/flask/app.py:2073: in wsgi_app
+    response = self.full_dispatch_request()
+/usr/local/lib/python3.11/site-packages/flask/app.py:1519: in full_dispatch_request
+    rv = self.handle_user_exception(e)
+/usr/local/lib/python3.11/site-packages/flask/app.py:1517: in full_dispatch_request
+    rv = self.dispatch_request()
+/usr/local/lib/python3.11/site-packages/flask/app.py:1503: in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**req.view_args)
+todo_project/todo_project/routes.py:73: in register
+    flash(f'Account Created For {form.username.data}', 'success')
+/usr/local/lib/python3.11/site-packages/flask/helpers.py:389: in flash
+    session["_flashes"] = flashes
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+self = <NullSession {}>
+args = ('_flashes', [('success', 'Account Created For newuser')]), kwargs = {}
+    def _fail(self, *args: t.Any, **kwargs: t.Any) -> "te.NoReturn":
+>       raise RuntimeError(
+            "The session is unavailable because no secret "
+            "key was set.  Set the secret_key on the "
+            "application to something unique and secret."
+        )
+E       RuntimeError: The session is unavailable because no secret key was set.  Set the secret_key on the application to something unique and secret.
+/usr/local/lib/python3.11/site-packages/flask/sessions.py:97: RuntimeError
 
-4. Teste dos formulários:
-   - Verifica se os formulários da aplicação (RegistrationForm, LoginForm, UpdateUserInfoForm, UpdateUserPassword, TaskForm, UpdateTaskForm) são validados corretamente.
-   - Verifica se os formulários aceitam e processam os dados corretamente.
 
-5. Teste de integração:
-   - Verifica se a aplicação funciona corretamente como um todo, incluindo a interação entre os diferentes componentes (modelos, rotas, formulários).
 
+
+________________________________ test_add_task _________________________________
+client = <FlaskClient <Flask 'todo_project'>>
+    def test_add_task(client):
+        hashed_password = bcrypt.generate_password_hash('password').decode('utf-8')
+        user = User(username='testuser', password=hashed_password)
+        db.session.add(user)
+        db.session.commit()
+    
+>       client.post('/login', data=dict(
+            username='testuser',
+            password='password'
+        ), follow_redirects=True)
+tests/test_routes.py:53: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.11/site-packages/werkzeug/test.py:1136: in post
+    return self.open(*args, **kw)
+/usr/local/lib/python3.11/site-packages/flask/testing.py:217: in open
+    return super().open(
+/usr/local/lib/python3.11/site-packages/werkzeug/test.py:1076: in open
+    response = self.run_wsgi_app(request.environ, buffered=buffered)
+/usr/local/lib/python3.11/site-packages/werkzeug/test.py:945: in run_wsgi_app
+    rv = run_wsgi_app(self.application, environ, buffered=buffered)
+/usr/local/lib/python3.11/site-packages/werkzeug/test.py:1233: in run_wsgi_app
+    app_rv = app(environ, start_response)
+/usr/local/lib/python3.11/site-packages/flask/app.py:2091: in __call__
+    return self.wsgi_app(environ, start_response)
+/usr/local/lib/python3.11/site-packages/flask/app.py:2076: in wsgi_app
+    response = self.handle_exception(e)
+/usr/local/lib/python3.11/site-packages/flask/app.py:2073: in wsgi_app
+    response = self.full_dispatch_request()
+/usr/local/lib/python3.11/site-packages/flask/app.py:1519: in full_dispatch_request
+    rv = self.handle_user_exception(e)
+/usr/local/lib/python3.11/site-packages/flask/app.py:1517: in full_dispatch_request
+    rv = self.dispatch_request()
+/usr/local/lib/python3.11/site-packages/flask/app.py:1503: in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**req.view_args)
+todo_project/todo_project/routes.py:46: in login
+    login_user(user)
+/usr/local/lib/python3.11/site-packages/flask_login/utils.py:170: in login_user
+    session['_user_id'] = user_id
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+self = <NullSession {}>, args = ('_user_id', '1'), kwargs = {}
+    def _fail(self, *args: t.Any, **kwargs: t.Any) -> "te.NoReturn":
+>       raise RuntimeError(
+            "The session is unavailable because no secret "
+            "key was set.  Set the secret_key on the "
+            "application to something unique and secret."
+        )
+E       RuntimeError: The session is unavailable because no secret key was set.  Set the secret_key on the application to something unique and secret.
+/usr/local/lib/python3.11/site-packages/flask/sessions.py:97: RuntimeError
+
+
+
+
+
+________________________________ test_all_tasks ________________________________
+client = <FlaskClient <Flask 'todo_project'>>
+    def test_all_tasks(client):
+        hashed_password = bcrypt.generate_password_hash('password').decode('utf-8')
+        user = User(username='testuser', password=hashed_password)
+        db.session.add(user)
+        db.session.commit()
+    
+>       client.post('/login', data=dict(
+            username='testuser',
+            password='password'
+        ), follow_redirects=True)
+tests/test_routes.py:71: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.11/site-packages/werkzeug/test.py:1136: in post
+    return self.open(*args, **kw)
+/usr/local/lib/python3.11/site-packages/flask/testing.py:217: in open
+    return super().open(
+/usr/local/lib/python3.11/site-packages/werkzeug/test.py:1076: in open
+    response = self.run_wsgi_app(request.environ, buffered=buffered)
+/usr/local/lib/python3.11/site-packages/werkzeug/test.py:945: in run_wsgi_app
+    rv = run_wsgi_app(self.application, environ, buffered=buffered)
+/usr/local/lib/python3.11/site-packages/werkzeug/test.py:1233: in run_wsgi_app
+    app_rv = app(environ, start_response)
+/usr/local/lib/python3.11/site-packages/flask/app.py:2091: in __call__
+    return self.wsgi_app(environ, start_response)
+/usr/local/lib/python3.11/site-packages/flask/app.py:2076: in wsgi_app
+    response = self.handle_exception(e)
+/usr/local/lib/python3.11/site-packages/flask/app.py:2073: in wsgi_app
+    response = self.full_dispatch_request()
+/usr/local/lib/python3.11/site-packages/flask/app.py:1519: in full_dispatch_request
+    rv = self.handle_user_exception(e)
+/usr/local/lib/python3.11/site-packages/flask/app.py:1517: in full_dispatch_request
+    rv = self.dispatch_request()
+/usr/local/lib/python3.11/site-packages/flask/app.py:1503: in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**req.view_args)
+todo_project/todo_project/routes.py:46: in login
+    login_user(user)
+/usr/local/lib/python3.11/site-packages/flask_login/utils.py:170: in login_user
+    session['_user_id'] = user_id
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+self = <NullSession {}>, args = ('_user_id', '1'), kwargs = {}
+    def _fail(self, *args: t.Any, **kwargs: t.Any) -> "te.NoReturn":
+>       raise RuntimeError(
+            "The session is unavailable because no secret "
+            "key was set.  Set the secret_key on the "
+            "application to something unique and secret."
+        )
+E       RuntimeError: The session is unavailable because no secret key was set.  Set the secret_key on the application to something unique and secret.
+/usr/local/lib/python3.11/site-packages/flask/sessions.py:97: RuntimeError
+
+
+
+_______________________________ test_update_task _______________________________
+client = <FlaskClient <Flask 'todo_project'>>
+    def test_update_task(client):
+        hashed_password = bcrypt.generate_password_hash('password').decode('utf-8')
+        user = User(username='testuser', password=hashed_password)
+        db.session.add(user)
+        db.session.commit()
+    
+>       client.post('/login', data=dict(
+            username='testuser',
+            password='password'
+        ), follow_redirects=True)
+tests/test_routes.py:90: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.11/site-packages/werkzeug/test.py:1136: in post
+    return self.open(*args, **kw)
+/usr/local/lib/python3.11/site-packages/flask/testing.py:217: in open
+    return super().open(
+/usr/local/lib/python3.11/site-packages/werkzeug/test.py:1076: in open
+    response = self.run_wsgi_app(request.environ, buffered=buffered)
+/usr/local/lib/python3.11/site-packages/werkzeug/test.py:945: in run_wsgi_app
+    rv = run_wsgi_app(self.application, environ, buffered=buffered)
+/usr/local/lib/python3.11/site-packages/werkzeug/test.py:1233: in run_wsgi_app
+    app_rv = app(environ, start_response)
+/usr/local/lib/python3.11/site-packages/flask/app.py:2091: in __call__
+    return self.wsgi_app(environ, start_response)
+/usr/local/lib/python3.11/site-packages/flask/app.py:2076: in wsgi_app
+    response = self.handle_exception(e)
+/usr/local/lib/python3.11/site-packages/flask/app.py:2073: in wsgi_app
+    response = self.full_dispatch_request()
+/usr/local/lib/python3.11/site-packages/flask/app.py:1519: in full_dispatch_request
+    rv = self.handle_user_exception(e)
+/usr/local/lib/python3.11/site-packages/flask/app.py:1517: in full_dispatch_request
+    rv = self.dispatch_request()
+/usr/local/lib/python3.11/site-packages/flask/app.py:1503: in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**req.view_args)
+todo_project/todo_project/routes.py:46: in login
+    login_user(user)
+/usr/local/lib/python3.11/site-packages/flask_login/utils.py:170: in login_user
+    session['_user_id'] = user_id
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+self = <NullSession {}>, args = ('_user_id', '1'), kwargs = {}
+    def _fail(self, *args: t.Any, **kwargs: t.Any) -> "te.NoReturn":
+>       raise RuntimeError(
+            "The session is unavailable because no secret "
+            "key was set.  Set the secret_key on the "
+            "application to something unique and secret."
+        )
+E       RuntimeError: The session is unavailable because no secret key was set.  Set the secret_key on the application to something unique and secret.
+/usr/local/lib/python3.11/site-packages/flask/sessions.py:97: RuntimeError
+
+
+
+
+_______________________________ test_delete_task _______________________________
+client = <FlaskClient <Flask 'todo_project'>>
+    def test_delete_task(client):
+        hashed_password = bcrypt.generate_password_hash('password').decode('utf-8')
+        user = User(username='testuser', password=hashed_password)
+        db.session.add(user)
+        db.session.commit()
+    
+>       client.post('/login', data=dict(
+            username='testuser',
+            password='password'
+        ), follow_redirects=True)
+tests/test_routes.py:114: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.11/site-packages/werkzeug/test.py:1136: in post
+    return self.open(*args, **kw)
+/usr/local/lib/python3.11/site-packages/flask/testing.py:217: in open
+    return super().open(
+/usr/local/lib/python3.11/site-packages/werkzeug/test.py:1076: in open
+    response = self.run_wsgi_app(request.environ, buffered=buffered)
+/usr/local/lib/python3.11/site-packages/werkzeug/test.py:945: in run_wsgi_app
+    rv = run_wsgi_app(self.application, environ, buffered=buffered)
+/usr/local/lib/python3.11/site-packages/werkzeug/test.py:1233: in run_wsgi_app
+    app_rv = app(environ, start_response)
+/usr/local/lib/python3.11/site-packages/flask/app.py:2091: in __call__
+    return self.wsgi_app(environ, start_response)
+/usr/local/lib/python3.11/site-packages/flask/app.py:2076: in wsgi_app
+    response = self.handle_exception(e)
+/usr/local/lib/python3.11/site-packages/flask/app.py:2073: in wsgi_app
+    response = self.full_dispatch_request()
+/usr/local/lib/python3.11/site-packages/flask/app.py:1519: in full_dispatch_request
+    rv = self.handle_user_exception(e)
+/usr/local/lib/python3.11/site-packages/flask/app.py:1517: in full_dispatch_request
+    rv = self.dispatch_request()
+/usr/local/lib/python3.11/site-packages/flask/app.py:1503: in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**req.view_args)
+todo_project/todo_project/routes.py:46: in login
+    login_user(user)
+/usr/local/lib/python3.11/site-packages/flask_login/utils.py:170: in login_user
+    session['_user_id'] = user_id
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+self = <NullSession {}>, args = ('_user_id', '1'), kwargs = {}
+    def _fail(self, *args: t.Any, **kwargs: t.Any) -> "te.NoReturn":
+>       raise RuntimeError(
+            "The session is unavailable because no secret "
+            "key was set.  Set the secret_key on the "
+            "application to something unique and secret."
+        )
+E       RuntimeError: The session is unavailable because no secret key was set.  Set the secret_key on the application to something unique and secret.
+/usr/local/lib/python3.11/site-packages/flask/sessions.py:97: RuntimeError
+
+
+
+
+_________________________________ test_account _________________________________
+client = <FlaskClient <Flask 'todo_project'>>
+    def test_account(client):
+        hashed_password = bcrypt.generate_password_hash('password').decode('utf-8')
+        user = User(username='testuser', password=hashed_password)
+        db.session.add(user)
+        db.session.commit()
+    
+>       client.post('/login', data=dict(
+            username='testuser',
+            password='password'
+        ), follow_redirects=True)
+tests/test_routes.py:136: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.11/site-packages/werkzeug/test.py:1136: in post
+    return self.open(*args, **kw)
+/usr/local/lib/python3.11/site-packages/flask/testing.py:217: in open
+    return super().open(
+/usr/local/lib/python3.11/site-packages/werkzeug/test.py:1076: in open
+    response = self.run_wsgi_app(request.environ, buffered=buffered)
+/usr/local/lib/python3.11/site-packages/werkzeug/test.py:945: in run_wsgi_app
+    rv = run_wsgi_app(self.application, environ, buffered=buffered)
+/usr/local/lib/python3.11/site-packages/werkzeug/test.py:1233: in run_wsgi_app
+    app_rv = app(environ, start_response)
+/usr/local/lib/python3.11/site-packages/flask/app.py:2091: in __call__
+    return self.wsgi_app(environ, start_response)
+/usr/local/lib/python3.11/site-packages/flask/app.py:2076: in wsgi_app
+    response = self.handle_exception(e)
+/usr/local/lib/python3.11/site-packages/flask/app.py:2073: in wsgi_app
+    response = self.full_dispatch_request()
+/usr/local/lib/python3.11/site-packages/flask/app.py:1519: in full_dispatch_request
+    rv = self.handle_user_exception(e)
+/usr/local/lib/python3.11/site-packages/flask/app.py:1517: in full_dispatch_request
+    rv = self.dispatch_request()
+/usr/local/lib/python3.11/site-packages/flask/app.py:1503: in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**req.view_args)
+todo_project/todo_project/routes.py:46: in login
+    login_user(user)
+/usr/local/lib/python3.11/site-packages/flask_login/utils.py:170: in login_user
+    session['_user_id'] = user_id
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+self = <NullSession {}>, args = ('_user_id', '1'), kwargs = {}
+    def _fail(self, *args: t.Any, **kwargs: t.Any) -> "te.NoReturn":
+>       raise RuntimeError(
+            "The session is unavailable because no secret "
+            "key was set.  Set the secret_key on the "
+            "application to something unique and secret."
+        )
+E       RuntimeError: The session is unavailable because no secret key was set.  Set the secret_key on the application to something unique and secret.
+/usr/local/lib/python3.11/site-packages/flask/sessions.py:97: RuntimeError
+
+
+
+
+_____________________________ test_change_password _____________________________
+client = <FlaskClient <Flask 'todo_project'>>
+    def test_change_password(client):
+        hashed_password = bcrypt.generate_password_hash('password').decode('utf-8')
+        user = User(username='testuser', password=hashed_password)
+        db.session.add(user)
+        db.session.commit()
+    
+>       client.post('/login', data=dict(
+            username='testuser',
+            password='password'
+        ), follow_redirects=True)
+tests/test_routes.py:151: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.11/site-packages/werkzeug/test.py:1136: in post
+    return self.open(*args, **kw)
+/usr/local/lib/python3.11/site-packages/flask/testing.py:217: in open
+    return super().open(
+/usr/local/lib/python3.11/site-packages/werkzeug/test.py:1076: in open
+    response = self.run_wsgi_app(request.environ, buffered=buffered)
+/usr/local/lib/python3.11/site-packages/werkzeug/test.py:945: in run_wsgi_app
+    rv = run_wsgi_app(self.application, environ, buffered=buffered)
+/usr/local/lib/python3.11/site-packages/werkzeug/test.py:1233: in run_wsgi_app
+    app_rv = app(environ, start_response)
+/usr/local/lib/python3.11/site-packages/flask/app.py:2091: in __call__
+    return self.wsgi_app(environ, start_response)
+/usr/local/lib/python3.11/site-packages/flask/app.py:2076: in wsgi_app
+    response = self.handle_exception(e)
+/usr/local/lib/python3.11/site-packages/flask/app.py:2073: in wsgi_app
+    response = self.full_dispatch_request()
+/usr/local/lib/python3.11/site-packages/flask/app.py:1519: in full_dispatch_request
+    rv = self.handle_user_exception(e)
+/usr/local/lib/python3.11/site-packages/flask/app.py:1517: in full_dispatch_request
+    rv = self.dispatch_request()
+/usr/local/lib/python3.11/site-packages/flask/app.py:1503: in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**req.view_args)
+todo_project/todo_project/routes.py:46: in login
+    login_user(user)
+/usr/local/lib/python3.11/site-packages/flask_login/utils.py:170: in login_user
+    session['_user_id'] = user_id
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+self = <NullSession {}>, args = ('_user_id', '1'), kwargs = {}
+    def _fail(self, *args: t.Any, **kwargs: t.Any) -> "te.NoReturn":
+>       raise RuntimeError(
+            "The session is unavailable because no secret "
+            "key was set.  Set the secret_key on the "
+            "application to something unique and secret."
+        )
+E       RuntimeError: The session is unavailable because no secret key was set.  Set the secret_key on the application to something unique and secret.
+/usr/local/lib/python3.11/site-packages/flask/sessions.py:97: RuntimeError
