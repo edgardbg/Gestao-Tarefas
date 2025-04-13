@@ -4,7 +4,7 @@ variables:
   COMPOSE_HTTP_TIMEOUT: 600
   DOCKER_BUILDKIT: 0
   COMPOSE_DOCKER_CLI_BUILD: 0
-  PROJECT_DIR: "/Gestao-Tarefas/todo_project/"
+  PROJECT_DIR: "/Gestao-Tarefas"
 
 stages:
   - build
