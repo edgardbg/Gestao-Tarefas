@@ -221,3 +221,25 @@ E       [SQL: INSERT INTO user (username, password) VALUES (?, ?)]
 E       [parameters: ('testuser', 'password')]
 E       (Background on this error at: https://sqlalche.me/e/14/gkpj)
 /usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py:736: IntegrityError
+
+Descrição dos testes realizados pelo pytest:
+
+1. Teste do modelo de usuário:
+   - Verifica se um usuário pode ser criado e salvo no banco de dados.
+   - Verifica se os atributos do usuário (id, username, password, tasks) são definidos corretamente.
+
+2. Teste do modelo de tarefa:
+   - Verifica se uma tarefa pode ser criada e salva no banco de dados.
+   - Verifica se os atributos da tarefa (id, content, date_posted, user_id, author) são definidos corretamente.
+
+3. Teste das rotas:
+   - Verifica se as rotas da aplicação (about, login, register, add task, view all tasks, update task, delete task, account settings, change password) estão funcionando corretamente.
+   - Verifica se as mensagens de sucesso e erro são exibidas corretamente.
+
+4. Teste dos formulários:
+   - Verifica se os formulários da aplicação (RegistrationForm, LoginForm, UpdateUserInfoForm, UpdateUserPassword, TaskForm, UpdateTaskForm) são validados corretamente.
+   - Verifica se os formulários aceitam e processam os dados corretamente.
+
+5. Teste de integração:
+   - Verifica se a aplicação funciona corretamente como um todo, incluindo a interação entre os diferentes componentes (modelos, rotas, formulários).
+
